@@ -32,4 +32,60 @@ o quê foi decidido, por quê, quais alternativas foram consideradas.
 
 ## Decisões registradas
 
-[Nenhuma decisão registrada ainda — adicionar conforme o projeto avança]
+---
+
+### ADR-001 — Stack tecnológica do MVP
+**Data:** 2026-04-08
+**Status:** Aceito
+
+**Contexto:**
+ObrasApp é um SaaS B2B com três superfícies: app mobile para campo (engenheiro e funcionário),
+dashboard web para gestor e API backend. O time é pequeno e o MVP precisa ser entregue
+com agilidade sem sacrificar qualidade e segurança.
+
+**Decisão:**
+- Mobile: React Native com Expo e TypeScript
+- Web: Next.js 14 com TypeScript e Tailwind
+- Backend: Node.js com Fastify e TypeScript
+- Banco: PostgreSQL com Prisma ORM
+- Monorepo: Turborepo com workspaces (apps/mobile, apps/web, apps/api, packages/shared)
+
+**Alternativas consideradas:**
+- Flutter — descartado porque o time tem mais familiaridade com JS/TS (React Native aproveita o mesmo ecossistema do Next.js)
+- Python/FastAPI — descartado para manter TypeScript em toda a stack (tipos compartilhados via packages/shared)
+- Express — descartado em favor do Fastify (melhor performance, TypeScript nativo, plugins oficiais de segurança)
+- Supabase — avaliado como opção gerenciada, mas Railway + Prisma dá mais controle e portabilidade
+
+**Consequências:**
+- Positivas: TypeScript end-to-end permite compartilhar tipos entre mobile, web e API; Expo acelera o desenvolvimento mobile; Prisma simplifica migrations e type-safety no banco
+- Trade-offs: Monorepo exige configuração inicial do Turborepo; React Native tem limitações de performance versus Flutter em animações complexas (não crítico para este produto)
+
+**Revisão em:** Após 3 meses de desenvolvimento ou se surgir necessidade de performance crítica no mobile
+
+---
+
+### ADR-002 — Estrutura de monorepo
+**Data:** 2026-04-08
+**Status:** Aceito
+
+**Contexto:**
+Mobile, web e API compartilham tipos (entidades, DTOs, schemas Zod). Manter em repositórios
+separados criaria duplicação de tipos e dessincronização entre frontend e backend.
+
+**Decisão:**
+Monorepo com Turborepo:
+```
+apps/mobile    → React Native (Expo)
+apps/web       → Next.js
+apps/api       → Fastify
+packages/shared     → tipos TypeScript compartilhados
+packages/validators → schemas Zod reutilizáveis
+```
+
+**Alternativas consideradas:**
+- Repositórios separados — descartado por duplicação de tipos e complexidade de sincronização
+- Nx — descartado por complexidade desnecessária no início; Turborepo é mais simples para o tamanho atual do projeto
+
+**Consequências:**
+- Positivas: tipo `Medicao` definido uma vez, usado em mobile, web e API; mudança de schema propaga automaticamente
+- Trade-offs: CI/CD ligeiramente mais complexo (Turborepo resolve com pipeline de build)
