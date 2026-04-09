@@ -89,3 +89,33 @@ packages/validators → schemas Zod reutilizáveis
 **Consequências:**
 - Positivas: tipo `Medicao` definido uma vez, usado em mobile, web e API; mudança de schema propaga automaticamente
 - Trade-offs: CI/CD ligeiramente mais complexo (Turborepo resolve com pipeline de build)
+
+---
+
+### ADR-003 — Banco de dados: Supabase (substitui Prisma local)
+**Data:** 2026-04-09
+**Status:** Aceito — substitui decisão anterior de usar Prisma standalone
+
+**Contexto:**
+O schema Prisma documentado inicialmente pressupunha banco gerenciado localmente. Supabase oferece
+PostgreSQL gerenciado + Auth + Storage + Realtime em um único serviço, reduzindo infraestrutura
+para um MVP e acelerando o desenvolvimento.
+
+**Decisão:**
+- Banco: Supabase (PostgreSQL gerenciado)
+- Auth: Supabase Auth (JWT emitido pelo Supabase, verificado via `supabase.auth.getUser()`)
+- Storage: Supabase Storage (fotos de obras, comprovantes)
+- Realtime: Supabase Realtime (alertas ao vivo, atualizações de medição)
+- Migrations: SQL versionado em `supabase/migrations/`
+- RLS: ativo em todas as tabelas (política padrão: DENY ALL)
+- Backend usa `SERVICE_KEY` — cliente usa `ANON_KEY` + RLS
+
+**Alternativas consideradas:**
+- Prisma + Railway PostgreSQL — descartado por precisar gerenciar auth separado e mais infraestrutura no MVP
+- PlanetScale — descartado por ser MySQL (schema diferente) e sem auth nativo
+- Firebase — descartado por ser NoSQL (modelo relacional é necessário para medições e histórico auditável)
+
+**Consequências:**
+- Positivas: auth pronto, storage pronto, realtime pronto, sem servidor de banco para gerenciar
+- Trade-offs: vendor lock-in no Supabase; mitigado pelo fato de ser PostgreSQL padrão — migração possível
+- Atenção: RLS mal configurado é falha de segurança crítica (ver skill `supabase-rls`)

@@ -19,8 +19,10 @@ Foco: medição de produção, pagamento por produção, controle de equipes e m
 Ver detalhes completos em `contexto/produto.md`.
 
 ## Skills globais relevantes
-- `~/.claude/skills/typescript-nextjs/SKILL.md` — padrões de frontend
-- `~/.claude/skills/flutter-dart/SKILL.md` — padrões do app mobile
+- `~/.claude/skills/react-native/SKILL.md` — padrões do app mobile
+- `~/.claude/skills/typescript-nextjs/SKILL.md` — padrões do dashboard web
+- `~/.claude/skills/fastify-nodejs/SKILL.md` — padrões da API backend
+- `~/.claude/skills/supabase-rls/SKILL.md` — banco, auth e segurança (CRÍTICO)
 - `~/.claude/skills/api-integrations/SKILL.md` — integrações externas
 - `~/.claude/skills/git-github-flow/SKILL.md` — fluxo de commits e PRs
 - `~/.claude/skills/debugging-testing/SKILL.md` — testes e debugging
@@ -32,9 +34,18 @@ Ver detalhes completos em `contexto/produto.md`.
 3. Dados corretos — medição é a unidade central do produto
 4. UX simples — funcionário de obra precisa usar sem treinamento
 
+## Banco de dados — Supabase
+- Usar `SUPABASE_SERVICE_KEY` apenas no backend (apps/api)
+- Usar `EXPO_PUBLIC_SUPABASE_ANON_KEY` no mobile
+- Usar `NEXT_PUBLIC_SUPABASE_ANON_KEY` no web
+- RLS ativo em todas as tabelas — verificar antes de qualquer deploy
+- Migrations versionadas em `supabase/migrations/`
+- Ver skill: `~/.claude/skills/supabase-rls/SKILL.md`
+
 ## O que nunca fazer
 - Código com credenciais hardcoded
-- SQL raw com input do usuário
-- Deletar medições (apenas corrigir com histórico)
-- Expor dados de um usuário para outro
+- `SUPABASE_SERVICE_KEY` no frontend ou mobile
+- Tabela sem RLS ativo
+- Deletar medições (apenas cancelar com motivo no histórico)
+- Expor dados de uma empresa para outra
 - Push direto na branch main
