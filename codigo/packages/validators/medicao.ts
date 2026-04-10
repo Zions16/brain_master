@@ -4,8 +4,8 @@
 import { z } from 'zod'
 
 export const criarMedicaoSchema = z.object({
-  funcionarioId: z.string().cuid({ message: 'ID de funcionário inválido' }),
-  servicoId: z.string().cuid({ message: 'ID de serviço inválido' }),
+  funcionario_id: z.string().uuid({ message: 'ID de funcionário inválido' }),
+  servico_id: z.string().uuid({ message: 'ID de serviço inválido' }),
   quantidade: z
     .number({ required_error: 'Quantidade é obrigatória' })
     .positive({ message: 'Quantidade deve ser maior que zero' })

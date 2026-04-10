@@ -1,8 +1,9 @@
 // packages/shared/tipos.ts
 // Tipos TypeScript compartilhados entre mobile, web e API
+// Nomes de campos em snake_case para corresponder ao schema do Supabase
 
 // ─────────────────────────────────────────────
-// ENUMS
+// ENUMS — valores em lowercase para corresponder ao CHECK do SQL
 // ─────────────────────────────────────────────
 
 export type Perfil = 'GESTOR' | 'ENGENHEIRO' | 'FUNCIONARIO' | 'COMPRAS' | 'FINANCEIRO'
@@ -11,14 +12,14 @@ export type TipoPagamento = 'POR_PRODUCAO' | 'DIARIA' | 'HORA' | 'MISTO'
 
 export type UnidadeMedida = 'M2' | 'ML' | 'M3' | 'UN' | 'KG' | 'HORA' | 'PECA'
 
-export type StatusObra = 'ATIVA' | 'PAUSADA' | 'ENCERRADA'
+export type StatusObra = 'ativa' | 'pausada' | 'encerrada'
 
-export type StatusMedicao = 'PENDENTE' | 'ATIVA' | 'CORRIGIDA' | 'CANCELADA'
+export type StatusMedicao = 'pendente' | 'ativa' | 'corrigida' | 'cancelada' | 'pendente_aprovacao'
 
-export type StatusPagamento = 'PENDENTE' | 'PAGO' | 'PARCIAL'
+export type StatusPagamento = 'pendente' | 'realizado'
 
 // ─────────────────────────────────────────────
-// ENTIDADES
+// ENTIDADES — campo por campo alinhado com o Supabase
 // ─────────────────────────────────────────────
 
 export interface Empresa {
@@ -26,100 +27,111 @@ export interface Empresa {
   nome: string
   cnpj?: string
   plano: string
-  ativo: boolean
-  criadoEm: string
+  status: string
+  created_at: string
 }
 
 export interface Usuario {
   id: string
-  empresaId: string
+  empresa_id: string
   nome: string
-  email: string
   perfil: Perfil
-  ativo: boolean
-  criadoEm: string
+  created_at: string
+}
+
+export interface UsuarioSession {
+  id: string
+  empresa_id: string
+  nome: string
+  perfil: Perfil
 }
 
 export interface Obra {
   id: string
-  empresaId: string
+  empresa_id: string
   nome: string
   endereco?: string
   cliente?: string
-  dataInicio?: string
-  dataPrevFim?: string
+  responsavel_id?: string
+  data_inicio?: string
+  data_prev_fim?: string
   status: StatusObra
-  criadoEm: string
+  created_at: string
+}
+
+export interface ObraUsuario {
+  obra_id: string
+  usuario_id: string
 }
 
 export interface Funcionario {
   id: string
-  empresaId: string
-  usuarioId?: string
+  empresa_id: string
+  obra_id?: string
   nome: string
   funcao?: string
-  tipoPagamento: TipoPagamento
-  valorDiaria?: number
+  tipo_pagamento: TipoPagamento
+  valor_base?: number
   ativo: boolean
-  criadoEm: string
+  created_at: string
 }
 
 export interface Servico {
   id: string
-  obraId: string
+  obra_id: string
   nome: string
-  unidade: UnidadeMedida
-  valorPagamento: number
-  valorCobranca?: number
+  unidade_medida: UnidadeMedida
+  valor_pagamento: number
+  valor_cobranca?: number
   ativo: boolean
-  criadoEm: string
+  created_at: string
 }
 
 export interface Medicao {
   id: string
-  obraId: string
-  funcionarioId: string
-  servicoId: string
+  obra_id: string
+  funcionario_id: string
+  servico_id: string
   quantidade: number
-  valorCalculado: number
-  valorCobrancaCalc?: number
+  valor_calculado: number
+  valor_cobranca_calculado?: number
   data: string
-  medidoPorId: string
-  aprovadoPorId?: string
+  medido_por: string
+  aprovado_por?: string
   status: StatusMedicao
   observacao?: string
-  criadoEm: string
+  created_at: string
   // relações opcionais (quando carregadas pelo backend)
   funcionario?: Pick<Funcionario, 'id' | 'nome' | 'funcao'>
-  servico?: Pick<Servico, 'id' | 'nome' | 'unidade'>
-  medidoPor?: Pick<Usuario, 'id' | 'nome'>
+  servico?: Pick<Servico, 'id' | 'nome' | 'unidade_medida'>
+  medido_por_usuario?: Pick<Usuario, 'id' | 'nome'>
 }
 
-export interface HistoricoMedicao {
+export interface MedicaoHistorico {
   id: string
-  medicaoId: string
-  alteradoPorId: string
-  dataAlteracao: string
-  campoAlterado: string
-  valorAnterior: string
-  valorNovo: string
+  medicao_id: string
+  alterado_por: string
+  data_alteracao: string
+  campo_alterado: string
+  valor_anterior: string
+  valor_novo: string
   motivo: string
-  alteradoPor?: Pick<Usuario, 'id' | 'nome'>
+  alterado_por_usuario?: Pick<Usuario, 'id' | 'nome'>
 }
 
 export interface Pagamento {
   id: string
-  obraId: string
-  funcionarioId: string
-  periodoInicio: string
-  periodoFim: string
-  valorTotal: number
-  dataPagamento?: string
+  obra_id: string
+  funcionario_id: string
+  periodo_inicio: string
+  periodo_fim: string
+  valor_total: number
+  data_pagamento?: string
+  pago_por?: string
+  forma_pagamento?: string
   status: StatusPagamento
-  formaPagamento?: string
   observacao?: string
-  lancadoPorId: string
-  criadoEm: string
+  created_at: string
   funcionario?: Pick<Funcionario, 'id' | 'nome'>
 }
 
@@ -128,8 +140,8 @@ export interface Pagamento {
 // ─────────────────────────────────────────────
 
 export interface CriarMedicaoDTO {
-  funcionarioId: string
-  servicoId: string
+  funcionario_id: string
+  servico_id: string
   quantidade: number
   data?: string
   observacao?: string
@@ -141,10 +153,10 @@ export interface CorrigirMedicaoDTO {
 }
 
 export interface CriarPagamentoDTO {
-  funcionarioId: string
-  periodoInicio: string
-  periodoFim: string
-  formaPagamento?: string
+  funcionario_id: string
+  periodo_inicio: string
+  periodo_fim: string
+  forma_pagamento?: string
   observacao?: string
 }
 
@@ -153,10 +165,10 @@ export interface LoginDTO {
   senha: string
 }
 
+// Supabase gerencia tokens — apenas access_token é exposto pela API
 export interface AuthResponse {
-  accessToken: string
-  refreshToken: string
-  usuario: Usuario
+  access_token: string
+  usuario: UsuarioSession
 }
 
 // ─────────────────────────────────────────────
@@ -179,4 +191,25 @@ export interface PaginatedResponse<T> {
   total: number
   page: number
   limit: number
+}
+
+// ─────────────────────────────────────────────
+// TIPOS AGREGADOS (responses de dashboard)
+// ─────────────────────────────────────────────
+
+export interface DashboardObra {
+  obra_id: string
+  obra_nome: string
+  total_medicoes: number
+  valor_total_periodo: number
+  funcionarios_ativos: number
+}
+
+export interface ResumoFuncionario {
+  funcionario_id: string
+  funcionario_nome: string
+  total_medicoes: number
+  valor_total: number
+  periodo_inicio: string
+  periodo_fim: string
 }

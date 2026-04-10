@@ -9,12 +9,7 @@ export const loginSchema = z.object({
     .toLowerCase(),
   senha: z
     .string({ required_error: 'Senha é obrigatória' })
-    .min(6, { message: 'Senha deve ter pelo menos 6 caracteres' }),
-})
-
-export const refreshTokenSchema = z.object({
-  refreshToken: z.string({ required_error: 'Refresh token é obrigatório' }),
+    .min(8, { message: 'Senha deve ter pelo menos 8 caracteres' }),
 })
 
 export type LoginInput = z.infer<typeof loginSchema>
-export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>

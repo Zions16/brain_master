@@ -103,8 +103,14 @@ Tarefas (executar nesta ordem):
     empresa_id UUID NOT NULL REFERENCES empresa(id),
     nome TEXT NOT NULL,
     perfil TEXT NOT NULL CHECK (perfil IN ('GESTOR','ENGENHEIRO','FUNCIONARIO','COMPRAS','FINANCEIRO')),
-    obras_ids UUID[] DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW()
+  );
+
+  -- Tabela de vínculo usuário ↔ obra (substitui obras_ids array — auditável e com FK)
+  CREATE TABLE obra_usuario (
+    obra_id UUID NOT NULL REFERENCES obra(id) ON DELETE CASCADE,
+    usuario_id UUID NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
+    PRIMARY KEY (obra_id, usuario_id)
   );
 
   CREATE TABLE obra (

@@ -40,6 +40,7 @@ Turborepo rodando, Supabase conectado, schema SQL inicial criado, RLS ativo, CI 
 Sprint 1:  0/7 tarefas concluídas
 Fase 1:    0% — aguardando início do código
 Bloqueio:  criar projeto no Supabase
+Pré-código: 8 bugs corrigidos antes de iniciar (tipos, validators, modelo-banco, plano-geral)
 ```
 
 ---
