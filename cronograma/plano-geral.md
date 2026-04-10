@@ -5,13 +5,37 @@
 
 ## LEIA ISTO PRIMEIRO
 
-Antes de qualquer ação, leia:
-1. Este arquivo completo
-2. `sessoes/ultima-sessao.md` — onde o projeto parou
+Antes de qualquer ação, leia nesta ordem:
+1. `cronograma/ontem.md` — o que foi feito no último ciclo
+2. `cronograma/semana-atual.md` — tarefas desta semana
 3. `contexto/produto.md` — o que é o app
 4. A skill relevante em `~/.claude/skills/`
 
 Confirme o entendimento em 5 bullets antes de agir.
+
+---
+
+## SISTEMA DE DOCUMENTAÇÃO EVOLUTIVA
+
+```
+cronograma/
+  plano-geral.md          ← este arquivo — visão estrutural
+  semana-atual.md         ← atualizado diariamente
+  ontem.md                ← último ciclo de trabalho
+  historico/
+    dia-YYYY-MM-DD.md     ← conteúdo anterior de ontem.md
+    semana-YYYY-WW.md     ← semanas encerradas
+```
+
+### Fluxo obrigatório a cada atualização
+1. Ler `ontem.md` + `semana-atual.md`
+2. Identificar o que foi feito e o que mudou
+3. Mover `ontem.md` atual para `historico/dia-YYYY-MM-DD.md`
+4. Escrever novo `ontem.md` com o trabalho desta sessão
+5. Atualizar `semana-atual.md` com progresso
+6. Se semana mudou: mover `semana-atual.md` para `historico/semana-YYYY-WW.md`
+
+**Nunca apagar histórico. Sempre mover. Sempre rastrear.**
 
 ---
 
