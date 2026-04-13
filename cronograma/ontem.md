@@ -1,49 +1,51 @@
-# Ontem — 2026-04-11
+# Ontem — 2026-04-13
 
-**Data:** 2026-04-11
-**Etapa do projeto:** Fase 1 — Sprint 1 (pré-código: bugs corrigidos)
+**Data:** 2026-04-13
+**Etapa do projeto:** Fase 1 — Sprint 1 (pré-código: base 100% corrigida)
 **Hora de referência:** fim do dia
 
 ---
 
 ## O que foi feito
 
-Code review completo por Senior Engineer + Tech Lead antes de qualquer código de aplicação.
-8 bugs identificados e todos corrigidos nesta sessão.
+- Code review completo (Senior Engineer + Tech Lead) antes de qualquer código de aplicação
+- 8 bugs identificados e corrigidos nos arquivos base do projeto
+- `AGENTE_BRAIN_MASTER.md` criado — persona, protocolo e rituais do arquiteto para novas sessões
 
 ## Bugs corrigidos
 
-| Bug | Arquivo | Problema | Correção |
-|-----|---------|----------|----------|
-| BUG-001 | `validators/medicao.ts` | `.cuid()` rejeita UUIDs do Supabase | `.uuid()` nos campos `funcionario_id` e `servico_id` |
-| BUG-002 | `tipos.ts` | Enums uppercase incompatíveis com SQL | Enums em lowercase: `'ativa'`, `'pendente'`, `'realizado'` |
-| BUG-003 | `tipos.ts` | Campos em camelCase incompatíveis com Supabase | snake_case em todos os campos: `empresa_id`, `obra_id`, `created_at` |
-| BUG-004 | `tipos.ts` + `validators/auth.ts` | `RefreshToken` / `refreshToken` — Supabase gerencia tokens | Removidos `RefreshToken`, `refreshTokenSchema`, `AuthResponse.refreshToken` |
-| BUG-005 | `plano-geral.md` Sprint 4 | `GENERATED ALWAYS AS` com subquery (SQL inválido) | `valor_calculado` como coluna normal — calculado no backend |
-| BUG-006 | `plano-geral.md` Sprint 1 | `obras_ids UUID[]` sem FK e sem auditoria | Tabela `obra_usuario (obra_id, usuario_id)` com PK composta |
-| BUG-007 | `docs/modelo-banco.md` | Schema em Prisma (ADR-003 escolheu Supabase SQL) | Reescrito inteiro em SQL puro para Supabase migrations |
-| BUG-008 | `validators/auth.ts` | Senha mínima 6 chars (fraca) | Mínimo alterado para 8 chars |
+| Bug | Arquivo | Correção |
+|-----|---------|----------|
+| BUG-001 | `validators/medicao.ts` | `.cuid()` → `.uuid()` + campos snake_case |
+| BUG-002 | `tipos.ts` | Enums lowercase: `'ativa'`, `'pendente'`, `'realizado'` |
+| BUG-003 | `tipos.ts` | Campos snake_case: `empresa_id`, `obra_id`, `created_at` |
+| BUG-004 | `tipos.ts` + `validators/auth.ts` | Removidos `RefreshToken`, `refreshTokenSchema`, `refreshToken` |
+| BUG-005 | `plano-geral.md` Sprint 4 | `valor_calculado` como coluna normal (calculado no backend) |
+| BUG-006 | `plano-geral.md` Sprint 1 | `obras_ids UUID[]` → tabela `obra_usuario` com FK e PK composta |
+| BUG-007 | `docs/modelo-banco.md` | Reescrito de Prisma para SQL puro (Supabase migrations) |
+| BUG-008 | `validators/auth.ts` | Senha mínima 6 → 8 caracteres |
 
 ## Arquivos modificados
 
 | Arquivo | Ação |
 |---|---|
-| `codigo/packages/validators/medicao.ts` | `.cuid()` → `.uuid()`, nomes snake_case |
-| `codigo/packages/validators/auth.ts` | min 8 chars, removido `refreshTokenSchema` |
-| `codigo/packages/shared/tipos.ts` | Reescrito: enums lowercase, snake_case, sem RefreshToken, novos tipos agregados |
+| `codigo/packages/shared/tipos.ts` | Reescrito completo |
+| `codigo/packages/validators/auth.ts` | Reescrito completo |
+| `codigo/packages/validators/medicao.ts` | .cuid() → .uuid(), snake_case |
 | `docs/modelo-banco.md` | Reescrito de Prisma para SQL puro |
-| `cronograma/plano-geral.md` | Sprint 1: `obras_ids` → `obra_usuario` join table |
+| `cronograma/plano-geral.md` | Sprint 1: obra_usuario join table |
+| `AGENTE_BRAIN_MASTER.md` | Criado |
 
 ## Decisões tomadas
 
-- `StatusMedicao` agora inclui `'pendente_aprovacao'` (alinha com RN-005: ENGENHEIRO cria como pendente, GESTOR aprova)
-- `StatusPagamento` corrigido para `'pendente' | 'realizado'` (sem `'PAGO'` ou `'PARCIAL'` que não existem no SQL)
-- `AuthResponse` simplificado: `{ access_token: string, usuario: UsuarioSession }` — Supabase gerencia refresh token internamente
-- `modelo-banco.md` passa a ser a fonte de verdade do schema SQL (será a base para migrations)
+- `StatusMedicao` inclui `'pendente_aprovacao'` → alinha com RN-005
+- `StatusPagamento`: `'pendente' | 'realizado'` → remove 'PAGO' e 'PARCIAL' que não existiam no SQL
+- `AuthResponse`: `{ access_token, usuario }` → Supabase gerencia refresh token internamente
+- `modelo-banco.md` é a fonte de verdade do schema SQL para migrations
 
 ## Problemas encontrados
 
-Nenhum bug novo. Todos os 8 identificados foram corrigidos.
+Nenhum. Todos os bugs foram resolvidos sem bloqueio.
 
 ## Próximos passos
 
@@ -52,9 +54,9 @@ Nenhum bug novo. Todos os 8 identificados foram corrigidos.
 3. Inicializar Turborepo: `cd ~/Brain\ Master/ObrasApp/codigo && npx create-turbo@latest . --package-manager npm`
 4. Preencher `.env` com as chaves
 5. Executar schema SQL do Sprint 1 no SQL Editor do Supabase
-6. Ativar RLS nas tabelas
+6. Ativar RLS nas tabelas `empresa`, `usuario`, `obra`
 7. Verificar `npm run dev` sem erros
 
-## Commit
-
-Ver após push desta sessão.
+## Commits
+- `6e09947` — fix: 8 bugs corrigidos
+- `aed820f` — docs: AGENTE_BRAIN_MASTER.md
