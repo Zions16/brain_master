@@ -1,0 +1,14 @@
+{
+  "name": "@brain-master/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./tipos.ts",
+  "types": "./tipos.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "lint": "eslint . --ext .ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

@@ -23,6 +23,6 @@
 
 ### Critério de conclusão
 - [ ] `npm run dev` sobe todos os apps sem erro
-- [ ] Supabase conectado e respondendo
+- [x] Supabase conectado — schema SQL executado com sucesso
 - [ ] CI rodando no GitHub Actions
-- [ ] RLS ativo em `empresa`, `usuario`, `obra`
+- [x] RLS ativo em `empresa`, `usuario`, `obra`, `obra_usuario`

@@ -1,0 +1,36 @@
+{
+  "name": "@brain-master/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start",
+    "build": "expo export",
+    "lint": "eslint . --ext .ts,.tsx",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@brain-master/shared": "*",
+    "@brain-master/validators": "*",
+    "expo": "~51.0.0",
+    "expo-router": "~3.5.0",
+    "expo-status-bar": "~1.12.1",
+    "expo-notifications": "~0.28.0",
+    "react": "18.2.0",
+    "react-native": "0.74.2",
+    "@supabase/supabase-js": "^2.44.2",
+    "zustand": "^4.5.4",
+    "axios": "^1.7.2",
+    "react-hook-form": "^7.52.1",
+    "zod": "^3.23.8",
+    "@hookform/resolvers": "^3.9.0",
+    "react-native-paper": "^5.12.3",
+    "@react-navigation/native": "^6.1.17",
+    "@react-navigation/stack": "^6.3.21"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/react": "~18.2.79",
+    "@types/react-native": "~0.73.0"
+  }
+}
