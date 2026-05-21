@@ -14,3 +14,11 @@
 | 2026-04-10 | Setup | Cronograma master completo (20 sprints, 4 fases) | ✓ |
 | 2026-04-10 | Setup | Estrutura completa de pastas criada | ✓ |
 | 2026-04-10 | Setup | GitHub Actions CI configurado | ✓ |
+| 2026-05-21 | Sprint 1 | .env criados e corrigidos para api, mobile e web | ✓ |
+| 2026-05-21 | Sprint 1 | Turborepo configurado manualmente (package.json, turbo.json, tsconfig, eslint, prettier) | ✓ |
+| 2026-05-21 | Sprint 1 | package.json criado para todos os apps e packages | ✓ |
+| 2026-05-21 | Sprint 1 | npm install concluído (1435 pacotes) | ✓ |
+| 2026-05-21 | Sprint 1 | .vscode/settings.json configurado (format on save, ESLint automático) | ✓ |
+| 2026-05-21 | Sprint 1 | Expo CLI, EAS CLI e Supabase CLI instalados | ✓ |
+| 2026-05-21 | Sprint 1 | Schema SQL Sprint 1 executado: empresa, usuario, obra, obra_usuario + RLS + policies | ✓ |
+| 2026-05-21 | Sprint 1 | Schema SQL completo executado: funcionario, servico, medicao, medicao_historico, pagamento + RLS | ✓ |
