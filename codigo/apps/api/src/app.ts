@@ -4,6 +4,7 @@ import { pluginHelmet } from './plugins/helmet'
 import { pluginRateLimit } from './plugins/rateLimit'
 import { authRoutes } from './modules/auth/auth.routes'
 import { obrasRoutes } from './modules/obras/obras.routes'
+import { funcionariosRoutes } from './modules/funcionarios/funcionarios.routes'
 
 export async function buildApp() {
   const app = Fastify({
@@ -16,6 +17,7 @@ export async function buildApp() {
 
   app.register(authRoutes, { prefix: '/api/v1/auth' })
   app.register(obrasRoutes, { prefix: '/api/v1/obras' })
+  app.register(funcionariosRoutes, { prefix: '/api/v1/funcionarios' })
 
   app.get('/health', async () => ({ status: 'ok' }))
 

@@ -31,14 +31,14 @@ export async function login(input: LoginInput): Promise<AuthResponse> {
 export async function refresh(refreshToken: string): Promise<AuthResponse> {
   const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken })
 
-  if (error || !data.session) {
+  if (error || !data.session || !data.user) {
     throw { statusCode: 401, message: 'Refresh token inválido ou expirado' }
   }
 
   const { data: usuario, error: usuarioError } = await supabase
     .from('usuario')
     .select('id, empresa_id, nome, perfil')
-    .eq('id', data.user!.id)
+    .eq('id', data.user.id)
     .single()
 
   if (usuarioError || !usuario) {

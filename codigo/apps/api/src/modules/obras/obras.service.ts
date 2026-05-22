@@ -14,11 +14,21 @@ export async function listarObras(empresaId: string): Promise<Obra[]> {
 }
 
 export async function listarMinhasObras(usuarioId: string, empresaId: string): Promise<Obra[]> {
+  const { data: links, error: linksError } = await supabase
+    .from('obra_usuario')
+    .select('obra_id')
+    .eq('usuario_id', usuarioId)
+
+  if (linksError) throw { statusCode: 500, message: 'Erro ao listar obras vinculadas' }
+
+  const obraIds = (links ?? []).map((l) => l.obra_id as string)
+  if (obraIds.length === 0) return []
+
   const { data, error } = await supabase
     .from('obra')
-    .select('*, obra_usuario!inner(usuario_id)')
+    .select('*')
     .eq('empresa_id', empresaId)
-    .eq('obra_usuario.usuario_id', usuarioId)
+    .in('id', obraIds)
     .order('created_at', { ascending: false })
 
   if (error) throw { statusCode: 500, message: 'Erro ao listar obras vinculadas' }
