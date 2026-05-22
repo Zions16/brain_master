@@ -2,6 +2,14 @@
 
 ---
 
+## 2026-05-22 — Sprint 4: Funcionários (próximo)
+
+**Sprint:** 4
+**Fase:** Fase 1 — MVP
+**Status:** não iniciado
+
+---
+
 ## 2026-05-22 — Sprint 2: Autenticação
 
 **Sprint:** 2

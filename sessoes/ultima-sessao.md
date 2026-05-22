@@ -4,60 +4,44 @@
 2026-05-22
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 2 — Autenticação (em andamento)
+Fase 1 — Sprint 3 — CRUD de Obras (concluído)
 
 ## O que foi feito
 
-- Estrutura completa da API criada em `codigo/apps/api/src/`
-- `lib/supabase.ts` — cliente singleton com service key (autoRefreshToken e persistSession desativados — backend stateless)
-- `plugins/cors.ts` — origens lidas do ALLOWED_ORIGINS
-- `plugins/helmet.ts` — headers de segurança
-- `plugins/rateLimit.ts` — global: false (rate limit aplicado por rota)
-- `middlewares/autenticar.ts` — verifica JWT via supabase.auth.getUser(), consulta tabela usuario, popula request.usuario
-- `middlewares/autorizar.ts` — HOF que recebe perfis permitidos e retorna preHandler
-- `modules/auth/auth.service.ts` — login (signInWithPassword), refresh (refreshSession), logout (admin.signOut)
-- `modules/auth/auth.controller.ts` — handlers com validação Zod e tratamento de erro
-- `modules/auth/auth.routes.ts` — POST /login (rate limit 5/15min), POST /refresh, POST /logout
-- `app.ts` — Fastify factory, registra plugins e rotas com prefix /api/v1/auth
-- `server.ts` — bootstrap (listen na PORT do .env)
-- `tsconfig.json` — CommonJS, moduleResolution node, paths para packages compartilhados
-- TypeScript compila sem erros (`tsc --noEmit`)
-- `tarefas/em-andamento.md` e `tarefas/concluidas.md` atualizados
+- watchman instalado via brew (resolve EMFILE no mobile)
+- `packages/validators/obra.ts` criado: criarObraSchema, editarObraSchema, mudarStatusObraSchema
+- `modules/obras/obras.service.ts` — listarObras, listarMinhasObras, buscarObra, criarObra, editarObra, mudarStatusObra
+- `modules/obras/obras.controller.ts` — handlers com validação Zod
+- `modules/obras/obras.routes.ts` — rotas com autenticar + autorizar por perfil
+- `app.ts` atualizado — obras registradas em /api/v1/obras
+- TypeScript sem erros
+- Todos os endpoints testados: POST, GET, PATCH (editar e status)
 
 ## Arquivos alterados
-- `codigo/apps/api/src/lib/supabase.ts` — criado
-- `codigo/apps/api/src/plugins/cors.ts` — criado
-- `codigo/apps/api/src/plugins/helmet.ts` — criado
-- `codigo/apps/api/src/plugins/rateLimit.ts` — criado
-- `codigo/apps/api/src/middlewares/autenticar.ts` — criado
-- `codigo/apps/api/src/middlewares/autorizar.ts` — criado
-- `codigo/apps/api/src/modules/auth/auth.service.ts` — criado
-- `codigo/apps/api/src/modules/auth/auth.controller.ts` — criado
-- `codigo/apps/api/src/modules/auth/auth.routes.ts` — criado
-- `codigo/apps/api/src/app.ts` — criado
-- `codigo/apps/api/src/server.ts` — criado
-- `codigo/apps/api/tsconfig.json` — criado
+- `codigo/packages/validators/obra.ts` — criado
+- `codigo/packages/validators/index.ts` — export obra adicionado
+- `codigo/apps/api/src/modules/obras/obras.service.ts` — criado
+- `codigo/apps/api/src/modules/obras/obras.controller.ts` — criado
+- `codigo/apps/api/src/modules/obras/obras.routes.ts` — criado
+- `codigo/apps/api/src/app.ts` — obrasRoutes registrado
 - `tarefas/em-andamento.md` — atualizado
 - `tarefas/concluidas.md` — atualizado
-- `sessoes/ultima-sessao.md` — atualizado
 
 ## Decisões tomadas
-- Verificação de JWT via `supabase.auth.getUser(token)` (não local com JWT_SECRET) → garante revogação automática, sem divergência de estado
-- `rateLimit global: false` → rate limit configurado por rota (apenas /login tem 5/15min)
-- `autenticar.ts` popula `request.usuario` completo (id + empresa_id + nome + perfil) → autorizar.ts não precisa de chamada extra ao banco
-- `logout` usa `admin.signOut(token)` para invalidar sessão no Supabase → retorna 204 mesmo em erro (logout é best-effort)
+- `listarMinhasObras` usa JOIN `obra_usuario!inner` — retorna apenas obras com vínculo explícito do usuário
+- `buscarObra` sempre filtra por `empresa_id` — nenhuma rota expõe obra de outra empresa
+- `autorizar` em cada rota individualmente (não global no módulo) — permite granularidade por endpoint
+
+## Commits desta sessão
+- `9b1f28a` — feat(api): sprint 2 — autenticação com Supabase Auth
+- `7568e93` — docs: sprint 2 validado — login testado e funcionando
+- `c6baac2` — feat(api): sprint 3 — CRUD de obras
 
 ## Onde parou
-Código da API pronto e compilando. Falta validação end-to-end:
-- Subir a API com `npm run dev`
-- Criar um usuário de teste no Supabase Auth + tabela usuario
-- Testar os 3 endpoints de auth
+Sprints 2 e 3 completos e testados. API com auth + obras funcionando.
 
 ## Próxima ação (EXATA)
-1. Criar usuário de teste no Supabase (Auth + insert em usuario com empresa_id e perfil)
-2. Subir API: `cd codigo && npm run dev --filter=@brain-master/api`
-3. Testar: `curl -X POST http://localhost:3333/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"teste@teste.com","senha":"senha123"}'`
-4. Se ok: commit + iniciar Sprint 3 (CRUD de Obras)
-
-## Commit
-(pendente — aguardando validação end-to-end)
+Sprint 4 — Funcionários:
+1. `packages/validators/funcionario.ts` — criarFuncionarioSchema, editarFuncionarioSchema
+2. `modules/funcionarios/` — routes, controller, service
+3. Rotas: GET /funcionarios, POST /funcionarios, GET /:id, PATCH /:id, GET /:id/producao, GET /me/producao
