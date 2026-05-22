@@ -22,3 +22,4 @@
 | 2026-05-21 | Sprint 1 | Expo CLI, EAS CLI e Supabase CLI instalados | ✓ |
 | 2026-05-21 | Sprint 1 | Schema SQL Sprint 1 executado: empresa, usuario, obra, obra_usuario + RLS + policies | ✓ |
 | 2026-05-21 | Sprint 1 | Schema SQL completo executado: funcionario, servico, medicao, medicao_historico, pagamento + RLS | ✓ |
+| 2026-05-22 | Sprint 2 | Estrutura completa da API: lib/supabase, plugins (cors/helmet/rateLimit), middlewares (autenticar/autorizar), modules/auth (routes/controller/service), app.ts, server.ts, tsconfig.json | ✓ |

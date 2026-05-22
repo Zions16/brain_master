@@ -1,89 +1,63 @@
 # Última Sessão
 
 ## Data
-2026-05-21
+2026-05-22
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 1 — Fundação e infraestrutura (concluído)
+Fase 1 — Sprint 2 — Autenticação (em andamento)
 
 ## O que foi feito
 
-- Leitura completa de todos os arquivos do projeto (diagnóstico inicial)
-- .env criados e corrigidos para api, mobile e web
-- .env confirmados no .gitignore — não rastreados pelo git
-- Turborepo configurado manualmente (create-turbo não funciona em diretório com arquivos)
-- package.json raiz com workspaces, turbo.json, tsconfig.json, .eslintrc.js, .prettierrc criados
-- package.json criado para cada app (api, mobile, web) e cada package (shared, validators)
-- index.ts criado em packages/validators
-- npm install concluído com --legacy-peer-deps (1435 pacotes)
-- .vscode/settings.json criado (format on save, ESLint, Tailwind, Turbo)
-- Expo CLI 6.3.12, EAS CLI 19.0.6 e Supabase CLI 2.101.0 instalados
-- Schema SQL Sprint 1 executado no Supabase: empresa, usuario, obra, obra_usuario
-- Funções SECURITY DEFINER criadas: get_minha_empresa(), get_meu_perfil(), obra_vinculada()
-- RLS ativo nas 9 tabelas com 24 policies no total
-- Schema SQL completo executado: funcionario, servico, medicao, medicao_historico, pagamento
-- 2 commits publicados no repositório
+- Estrutura completa da API criada em `codigo/apps/api/src/`
+- `lib/supabase.ts` — cliente singleton com service key (autoRefreshToken e persistSession desativados — backend stateless)
+- `plugins/cors.ts` — origens lidas do ALLOWED_ORIGINS
+- `plugins/helmet.ts` — headers de segurança
+- `plugins/rateLimit.ts` — global: false (rate limit aplicado por rota)
+- `middlewares/autenticar.ts` — verifica JWT via supabase.auth.getUser(), consulta tabela usuario, popula request.usuario
+- `middlewares/autorizar.ts` — HOF que recebe perfis permitidos e retorna preHandler
+- `modules/auth/auth.service.ts` — login (signInWithPassword), refresh (refreshSession), logout (admin.signOut)
+- `modules/auth/auth.controller.ts` — handlers com validação Zod e tratamento de erro
+- `modules/auth/auth.routes.ts` — POST /login (rate limit 5/15min), POST /refresh, POST /logout
+- `app.ts` — Fastify factory, registra plugins e rotas com prefix /api/v1/auth
+- `server.ts` — bootstrap (listen na PORT do .env)
+- `tsconfig.json` — CommonJS, moduleResolution node, paths para packages compartilhados
+- TypeScript compila sem erros (`tsc --noEmit`)
+- `tarefas/em-andamento.md` e `tarefas/concluidas.md` atualizados
 
 ## Arquivos alterados
-- `codigo/package.json` — criado
-- `codigo/turbo.json` — criado
-- `codigo/tsconfig.json` — criado
-- `codigo/.eslintrc.js` — criado
-- `codigo/.prettierrc` — criado
-- `codigo/.vscode/settings.json` — criado
-- `codigo/apps/api/package.json` — criado
-- `codigo/apps/mobile/package.json` — criado
-- `codigo/apps/web/package.json` — criado
-- `codigo/packages/shared/package.json` — criado
-- `codigo/packages/validators/package.json` — criado
-- `codigo/packages/validators/index.ts` — criado
-- `codigo/apps/api/.env` — criado (não commitado)
-- `codigo/apps/mobile/.env` — criado (não commitado)
-- `codigo/apps/web/.env` — criado (não commitado)
-- `supabase/migrations/20260408_sprint1_fundacao.sql` — criado
-- `supabase/migrations/20260521_schema_completo.sql` — criado
-- `sessoes/ultima-sessao.md` — atualizado
-- `sessoes/historico.md` — atualizado
+- `codigo/apps/api/src/lib/supabase.ts` — criado
+- `codigo/apps/api/src/plugins/cors.ts` — criado
+- `codigo/apps/api/src/plugins/helmet.ts` — criado
+- `codigo/apps/api/src/plugins/rateLimit.ts` — criado
+- `codigo/apps/api/src/middlewares/autenticar.ts` — criado
+- `codigo/apps/api/src/middlewares/autorizar.ts` — criado
+- `codigo/apps/api/src/modules/auth/auth.service.ts` — criado
+- `codigo/apps/api/src/modules/auth/auth.controller.ts` — criado
+- `codigo/apps/api/src/modules/auth/auth.routes.ts` — criado
+- `codigo/apps/api/src/app.ts` — criado
+- `codigo/apps/api/src/server.ts` — criado
+- `codigo/apps/api/tsconfig.json` — criado
 - `tarefas/em-andamento.md` — atualizado
 - `tarefas/concluidas.md` — atualizado
+- `sessoes/ultima-sessao.md` — atualizado
 
 ## Decisões tomadas
-- Turborepo configurado manualmente — create-turbo falha em diretório com arquivos existentes
-- --legacy-peer-deps necessário por conflito @react-navigation/stack vs react-native-screens
-- RLS policies usam funções SECURITY DEFINER para cross-table lookups (evita recursão de RLS e erro de syntax)
-- Schema completo criado agora (não nos sprints 3/4) — evita migrations no meio do desenvolvimento
-
-## Status do banco (Supabase)
-9 tabelas | RLS ativo em todas | 24 policies
-
-| Tabela | Policies |
-|---|---|
-| empresa | 1 |
-| usuario | 2 |
-| obra | 4 |
-| obra_usuario | 3 |
-| funcionario | 3 |
-| servico | 3 |
-| medicao | 3 |
-| medicao_historico | 2 |
-| pagamento | 4 |
-
-## Commits desta sessão
-- `d9c2716` — feat: sprint 1 — turborepo, dependências e schema SQL do Supabase
-- `c9ac9e6` — feat: schema completo do banco — funcionario, servico, medicao, pagamento
+- Verificação de JWT via `supabase.auth.getUser(token)` (não local com JWT_SECRET) → garante revogação automática, sem divergência de estado
+- `rateLimit global: false` → rate limit configurado por rota (apenas /login tem 5/15min)
+- `autenticar.ts` popula `request.usuario` completo (id + empresa_id + nome + perfil) → autorizar.ts não precisa de chamada extra ao banco
+- `logout` usa `admin.signOut(token)` para invalidar sessão no Supabase → retorna 204 mesmo em erro (logout é best-effort)
 
 ## Onde parou
-Sprint 1 concluído. Banco 100% pronto no Supabase.
-Falta apenas `npm run dev` subindo (será feito no Sprint 2 ao criar os apps).
+Código da API pronto e compilando. Falta validação end-to-end:
+- Subir a API com `npm run dev`
+- Criar um usuário de teste no Supabase Auth + tabela usuario
+- Testar os 3 endpoints de auth
 
 ## Próxima ação (EXATA)
-Sprint 2 — Autenticação:
-1. Criar estrutura de pastas da API:
-   apps/api/src/server.ts
-   apps/api/src/app.ts
-   apps/api/src/plugins/ (jwt, cors, helmet, rateLimit)
-   apps/api/src/modules/auth/ (routes, controller, service)
-   apps/api/src/middlewares/ (autenticar.ts, autorizar.ts)
-2. Implementar POST /auth/login com Supabase Auth
-3. Rate limiting: 5 tentativas por IP em 15 minutos
-4. Middleware autenticar.ts: verifica JWT em todas as rotas protegidas
+1. Criar usuário de teste no Supabase (Auth + insert em usuario com empresa_id e perfil)
+2. Subir API: `cd codigo && npm run dev --filter=@brain-master/api`
+3. Testar: `curl -X POST http://localhost:3333/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"teste@teste.com","senha":"senha123"}'`
+4. Se ok: commit + iniciar Sprint 3 (CRUD de Obras)
+
+## Commit
+(pendente — aguardando validação end-to-end)
