@@ -9,3 +9,4 @@
 | 2026-05-21 | Ambiente completo: .env, Turborepo, dependências, VS Code, CLIs, banco 100% no Supabase | Concluído |
 | 2026-05-22 | Sprint 2 — API: estrutura completa (lib, plugins, middlewares, auth module, app, server, tsconfig) | Concluído |
 | 2026-05-22 | Sprint 3 — CRUD de obras: 6 endpoints testados, watchman instalado | Concluído |
+| 2026-05-22 | Sprint 4 — CRUD de funcionários + produção por período; 2 bugfixes em obras e auth | Concluído |
