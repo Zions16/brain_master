@@ -4,47 +4,53 @@
 2026-05-22
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 4 — Funcionários (concluído)
+Fase 1 — Sprint 5 — Serviços + Medições (concluído)
 
 ## O que foi feito
 
-### Bugfixes (antes do Sprint 4)
-- `listarMinhasObras`: bug onde `obra_usuario` vazava no payload de resposta — reescrito usando duas queries limpas (obra_usuario → ids → obra)
-- `auth.service.ts refresh`: non-null assertion `data.user!` removida, checagem explícita `!data.user` adicionada
+### Bugfixes críticos (descobertos durante Sprint 5)
+- **Session pollution (autenticar.ts)**: `supabase.auth.getUser(jwt)` no cliente singleton modificava a sessão interna, fazendo queries subsequentes usarem o JWT do usuário em vez da service key — ativando RLS e bloqueando INSERTs. Fix: cliente isolado `authVerifyClient` exclusivamente para verificação de JWT, nunca para DB.
+- **Função `obra_vinculada` ausente**: usada em todas as policies de servico/medicao/medicao_historico/pagamento mas nunca criada nas migrations. Fix: `supabase/migrations/20260522_obra_vinculada.sql` criado e executado no Supabase.
 
-### Sprint 4 — Funcionários
-- `packages/validators/funcionario.ts` criado: criarFuncionarioSchema, editarFuncionarioSchema, producaoQuerySchema
-- `modules/funcionarios/funcionarios.service.ts` — listar, buscar, criar, editar, calcularProducao
-- `modules/funcionarios/funcionarios.controller.ts` — handlers com validação Zod
-- `modules/funcionarios/funcionarios.routes.ts` — rotas com autenticar + autorizar
-- `app.ts` atualizado — funcionariosRoutes registrado em /api/v1/funcionarios
-- TypeScript sem erros, todos os endpoints testados
+### Sprint 5 — Serviços
+- `packages/validators/servico.ts` — criarServicoSchema, editarServicoSchema
+- `modules/servicos/` — listar, criar, editar, desativar (soft delete via ativo=false)
+- Rotas aninhadas em `/api/v1/obras/:obraId/servicos`
 
-### Decisão de escopo
-- `GET /funcionarios/me/producao` adiado — exige link `usuario.id → funcionario.id` não definido no schema atual. Registrado no backlog.
+### Sprint 5 — Medições (núcleo do produto)
+- `modules/medicoes/medicoes.service.ts` — registrar, corrigir, aprovar, cancelar, buscar, historico
+- Regra de negócio: `valor_calculado = quantidade × servico.valor_pagamento` calculado na API
+- Correção: grava 2 entradas em `medicao_historico` (quantidade + valor_calculado), status → `corrigida`
+- Cancelamento: grava 1 entrada em `medicao_historico`, status → `cancelada`, só aceita não-canceladas
+- Aprovação: apenas de medições `pendente`, status → `ativa` (no MVP medições nascem `ativa`)
+- Histórico: append-only, com join em `usuario` para nome do executor
 
 ## Arquivos alterados
-- `codigo/packages/validators/funcionario.ts` — criado
-- `codigo/packages/validators/index.ts` — export funcionario adicionado
-- `codigo/apps/api/src/modules/funcionarios/funcionarios.service.ts` — criado
-- `codigo/apps/api/src/modules/funcionarios/funcionarios.controller.ts` — criado
-- `codigo/apps/api/src/modules/funcionarios/funcionarios.routes.ts` — criado
-- `codigo/apps/api/src/app.ts` — funcionariosRoutes registrado
-- `codigo/apps/api/src/modules/obras/obras.service.ts` — bugfix listarMinhasObras
-- `codigo/apps/api/src/modules/auth/auth.service.ts` — bugfix refresh null check
+- `codigo/apps/api/src/middlewares/autenticar.ts` — bugfix session pollution
+- `codigo/apps/api/src/modules/servicos/` (3 arquivos) — criados
+- `codigo/apps/api/src/modules/medicoes/` (3 arquivos) — criados
+- `codigo/apps/api/src/app.ts` — servicosRoutes e medicoesRoutes registrados
+- `codigo/packages/validators/servico.ts` — criado
+- `codigo/packages/validators/index.ts` — export servico adicionado
+- `supabase/migrations/20260522_obra_vinculada.sql` — criado e executado
 
 ## Commits desta sessão
-- `5a3b84e` — docs: encerramento sessão 2026-05-22 (sprints 2 e 3)
-- `00e6110` — feat(api): sprint 4 — CRUD de funcionários e cálculo de produção
+- `00e6110` — feat(api): sprint 4 — CRUD de funcionários
+- `fc16db6` — docs: encerramento sessão sprint 4
+- `ae3bf1e` — feat(api): sprint 5 — serviços, medições e bugfixes críticos
+
+## Decisões tomadas
+- Medições nascem com status `ativa` no MVP (sem workflow de aprovação pendente→ativa)
+- `corrigir` atualiza in-place (não cria novo registro) — audit trail completo no historico
+- `authVerifyClient` separado do `supabase` singleton — padrão obrigatório para todos os middlewares futuros
+- `obra_vinculada`: GESTOR/FINANCEIRO têm acesso a todas as obras da empresa; ENGENHEIRO/COMPRAS via obra_usuario
 
 ## Onde parou
-Sprints 2, 3 e 4 completos. API com auth + obras + funcionários funcionando.
-`calcularProducao` retorna vazio (esperado — medições vêm no Sprint 5).
+API com auth + obras + funcionários + serviços + medições funcionando.
+Faltam: Sprint 6 (Pagamentos) e Sprint 7 (Dashboard).
 
 ## Próxima ação (EXATA)
-Sprint 5 — Serviços por obra + Medições (núcleo do produto):
-1. `packages/validators/servico.ts` — criarServicoSchema, editarServicoSchema
-2. `modules/servicos/` — CRUD vinculado a obra_id
-3. `packages/validators/medicao.ts` — já existe, revisar
-4. `modules/medicoes/` — registrar, corrigir (com motivo + historico), aprovar, cancelar, listar, detalhe
-5. Regra crítica: toda correção/cancelamento grava em medicao_historico (append-only)
+Sprint 6 — Pagamentos:
+1. `packages/validators/pagamento.ts` — criarPagamentoSchema, registrarPagamentoSchema
+2. `modules/pagamentos/` — calcular (valor por período baseado em medições ativas), criar, listar, marcar como realizado
+3. Rotas: GET /obras/:obraId/pagamentos, GET .../calcular, POST, PATCH /:id/realizar

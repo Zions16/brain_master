@@ -25,3 +25,4 @@
 | 2026-05-22 | Sprint 2 | Estrutura completa da API: lib/supabase, plugins (cors/helmet/rateLimit), middlewares (autenticar/autorizar), modules/auth (routes/controller/service), app.ts, server.ts, tsconfig.json | ✓ |
 | 2026-05-22 | Sprint 3 | CRUD de obras: listar, listar/minhas, criar, buscar, editar, mudar status — testado e funcionando | ✓ |
 | 2026-05-22 | Sprint 4 | CRUD de funcionários + cálculo de produção por período; bugfix listarMinhasObras e refresh | ✓ |
+| 2026-05-22 | Sprint 5 | Serviços (CRUD) + Medições (registrar/corrigir/aprovar/cancelar/historico); bugfix session pollution + obra_vinculada | ✓ |
