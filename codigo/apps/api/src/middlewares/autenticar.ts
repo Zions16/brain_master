@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { UsuarioSession } from '@brain-master/shared/tipos'
 
@@ -7,6 +8,15 @@ declare module 'fastify' {
     usuario: UsuarioSession
   }
 }
+
+// Cliente isolado exclusivamente para verificação de JWT.
+// Nunca usado para queries de banco — evita que auth.getUser() polua
+// a sessão do cliente de serviço e ative RLS nas queries seguintes.
+const authVerifyClient = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } },
+)
 
 export async function autenticar(request: FastifyRequest, reply: FastifyReply) {
   const authHeader = request.headers.authorization
@@ -17,7 +27,7 @@ export async function autenticar(request: FastifyRequest, reply: FastifyReply) {
 
   const token = authHeader.slice(7)
 
-  const { data: authData, error: authError } = await supabase.auth.getUser(token)
+  const { data: authData, error: authError } = await authVerifyClient.auth.getUser(token)
 
   if (authError || !authData.user) {
     return reply.status(401).send({ statusCode: 401, error: 'Unauthorized', message: 'Token inválido ou expirado' })
