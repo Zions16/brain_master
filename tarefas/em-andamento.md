@@ -17,8 +17,8 @@
 6. [x] `modules/auth/` — routes, controller, service
 7. [x] `app.ts` + `server.ts` — Fastify factory + bootstrap
 8. [x] `tsconfig.json` — configurado para monorepo
-9. [ ] Testar `POST /auth/login` manualmente com usuário real do Supabase
-10. [ ] Criar usuário de teste no Supabase para validação
+9. [x] Testar `POST /auth/login` manualmente com usuário real do Supabase
+10. [x] Criar usuário de teste no Supabase para validação
 
 ### Dependências
 - [x] Supabase com schema completo e RLS ativo (Sprint 1)
@@ -26,8 +26,8 @@
 
 ### Critério de conclusão
 - [x] TypeScript compila sem erros
-- [ ] `npm run dev` na API sobe sem erro
-- [ ] POST /auth/login retorna access_token + usuario
+- [x] `npm run dev` na API sobe sem erro
+- [x] POST /auth/login retorna access_token + usuario
 - [ ] POST /auth/refresh renova token
 - [ ] POST /auth/logout invalida sessão
 - [ ] Rate limit: 6ª tentativa de login bloqueada
