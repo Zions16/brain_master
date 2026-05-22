@@ -4,53 +4,53 @@
 2026-05-22
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 5 — Serviços + Medições (concluído)
+Fase 1 — Sprint 6 — Pagamentos (concluído)
 
 ## O que foi feito
 
-### Bugfixes críticos (descobertos durante Sprint 5)
-- **Session pollution (autenticar.ts)**: `supabase.auth.getUser(jwt)` no cliente singleton modificava a sessão interna, fazendo queries subsequentes usarem o JWT do usuário em vez da service key — ativando RLS e bloqueando INSERTs. Fix: cliente isolado `authVerifyClient` exclusivamente para verificação de JWT, nunca para DB.
-- **Função `obra_vinculada` ausente**: usada em todas as policies de servico/medicao/medicao_historico/pagamento mas nunca criada nas migrations. Fix: `supabase/migrations/20260522_obra_vinculada.sql` criado e executado no Supabase.
-
-### Sprint 5 — Serviços
-- `packages/validators/servico.ts` — criarServicoSchema, editarServicoSchema
-- `modules/servicos/` — listar, criar, editar, desativar (soft delete via ativo=false)
-- Rotas aninhadas em `/api/v1/obras/:obraId/servicos`
-
-### Sprint 5 — Medições (núcleo do produto)
-- `modules/medicoes/medicoes.service.ts` — registrar, corrigir, aprovar, cancelar, buscar, historico
-- Regra de negócio: `valor_calculado = quantidade × servico.valor_pagamento` calculado na API
-- Correção: grava 2 entradas em `medicao_historico` (quantidade + valor_calculado), status → `corrigida`
-- Cancelamento: grava 1 entrada em `medicao_historico`, status → `cancelada`, só aceita não-canceladas
-- Aprovação: apenas de medições `pendente`, status → `ativa` (no MVP medições nascem `ativa`)
-- Histórico: append-only, com join em `usuario` para nome do executor
+### Sprint 6 — Pagamentos
+- `packages/validators/pagamento.ts` — calculoPagamentoQuerySchema, criarPagamentoSchema, realizarPagamentoSchema
+- `modules/pagamentos/pagamentos.service.ts`:
+  - `calcularPagamento`: agrega medições ativas por obra+funcionário+período, retorna breakdown por serviço
+  - `listarPagamentos`: lista com join em funcionário
+  - `criarPagamento`: valor_total recalculado server-side (nunca confia no cliente); rejeita se 0 medições ativas
+  - `realizarPagamento`: pendente→realizado, registra pago_por e data_pagamento; rejeita se já realizado
+- `modules/pagamentos/pagamentos.controller.ts` + `pagamentos.routes.ts`
+- Rota estática `/calcular` registrada antes de `/:id` para evitar conflito de parâmetros
 
 ## Arquivos alterados
-- `codigo/apps/api/src/middlewares/autenticar.ts` — bugfix session pollution
-- `codigo/apps/api/src/modules/servicos/` (3 arquivos) — criados
-- `codigo/apps/api/src/modules/medicoes/` (3 arquivos) — criados
-- `codigo/apps/api/src/app.ts` — servicosRoutes e medicoesRoutes registrados
-- `codigo/packages/validators/servico.ts` — criado
-- `codigo/packages/validators/index.ts` — export servico adicionado
-- `supabase/migrations/20260522_obra_vinculada.sql` — criado e executado
+- `codigo/packages/validators/pagamento.ts` — criado
+- `codigo/packages/validators/index.ts` — export pagamento adicionado
+- `codigo/apps/api/src/modules/pagamentos/` (3 arquivos) — criados
+- `codigo/apps/api/src/app.ts` — pagamentosRoutes registrado
+
+## Testes realizados
+- GET /obras/:obraId/pagamentos/calcular ✅ (retornou breakdown por serviço, valor 500)
+- GET /obras/:obraId/pagamentos ✅ (lista vazia e com registro)
+- POST /obras/:obraId/pagamentos ✅ (criado com status pendente, valor server-side)
+- PATCH /obras/:obraId/pagamentos/:id/realizar ✅ (status→realizado, pago_por registrado)
+- POST sem medições no período ✅ (400 — Nenhuma medição ativa encontrada)
+- PATCH realizar já realizado ✅ (400 — Pagamento já foi realizado)
+- Query params inválidos ✅ (400 — ID de funcionário inválido)
 
 ## Commits desta sessão
-- `00e6110` — feat(api): sprint 4 — CRUD de funcionários
-- `fc16db6` — docs: encerramento sessão sprint 4
 - `ae3bf1e` — feat(api): sprint 5 — serviços, medições e bugfixes críticos
+- `7479d37` — docs: encerramento sessão 2026-05-22 — sprint 5 concluído
+- `3a7c1f1` — feat(api): sprint 6 — módulo de pagamentos
 
 ## Decisões tomadas
-- Medições nascem com status `ativa` no MVP (sem workflow de aprovação pendente→ativa)
-- `corrigir` atualiza in-place (não cria novo registro) — audit trail completo no historico
-- `authVerifyClient` separado do `supabase` singleton — padrão obrigatório para todos os middlewares futuros
-- `obra_vinculada`: GESTOR/FINANCEIRO têm acesso a todas as obras da empresa; ENGENHEIRO/COMPRAS via obra_usuario
+- valor_total sempre calculado server-side em `criarPagamento` — segurança contra manipulação de cliente
+- pago_por capturado do JWT (request.usuario.id) — nunca do body
+- `calcularPagamento` e `criarPagamento` compartilham `calcularValorPeriodo` interno
 
 ## Onde parou
-API com auth + obras + funcionários + serviços + medições funcionando.
-Faltam: Sprint 6 (Pagamentos) e Sprint 7 (Dashboard).
+API completa com auth + obras + funcionários + serviços + medições + pagamentos.
+Sprint 7 (Dashboard web — Next.js) ainda não iniciado.
 
 ## Próxima ação (EXATA)
-Sprint 6 — Pagamentos:
-1. `packages/validators/pagamento.ts` — criarPagamentoSchema, registrarPagamentoSchema
-2. `modules/pagamentos/` — calcular (valor por período baseado em medições ativas), criar, listar, marcar como realizado
-3. Rotas: GET /obras/:obraId/pagamentos, GET .../calcular, POST, PATCH /:id/realizar
+Sprint 7 — Dashboard Web (Next.js):
+1. Setup inicial: auth com Supabase, layout base, proteção de rotas
+2. Página de obras (lista + detalhe)
+3. Página de funcionários
+4. Página de medições por obra
+5. Página de pagamentos por obra
