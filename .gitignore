@@ -38,3 +38,9 @@ coverage/
 # Flutter
 *.g.dart
 *.freezed.dart
+
+# Expo
+.expo/
+
+# TypeScript build cache
+*.tsbuildinfo

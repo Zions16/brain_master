@@ -4,60 +4,45 @@
 2026-05-26
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 7 — Dashboard Web — Teste de integração + correções
+Fase 1 — Sprint 8 — Design e UX do Dashboard Web
 
 ## O que foi feito
 
-### Teste de integração web + API
-- Login ✅
-- Lista de obras ✅
-- Detalhe de obra ✅
-- Funcionários ✅
-- Medições ✅ (tabela carrega, status Ativa/Cancelada corretos)
-- Pagamentos ✅ (tabela carrega, botão Realizar presente)
-
-### Bug 1 corrigido — Calcular Pagamentos retornava erro
-- Causa: web enviava `periodo_inicio/periodo_fim`, API esperava `inicio/fim` + `funcionario_id`
-- Solução: API refatorada para calcular **todos** os funcionários da obra no período (sem exigir `funcionario_id`)
-- `packages/validators/pagamento.ts` → removido `funcionario_id` do `calculoPagamentoQuerySchema`
-- `apps/api/src/modules/pagamentos/pagamentos.service.ts` → novo `calcularTodosPagamentos()`
-- `apps/api/src/modules/pagamentos/pagamentos.controller.ts` → usa `calcularTodosPagamentos`
-- `apps/web/src/app/(dashboard)/obras/[id]/pagamentos/calcular/page.tsx` → params corrigidos (`inicio/fim`), response `data.data`
-
-### Bug 2 corrigido — Pagamentos duplicados
-- Causa: `criarPagamento` não verificava existência antes de inserir
-- Solução: guard adicionado em `pagamentos.service.ts` — lança 409 se já existe `pendente` para mesmo funcionário + obra + período
-
-### Feature — Página de Serviços
-- `apps/web/src/app/(dashboard)/obras/[id]/servicos/page.tsx` → criado
-  - Tabela: nome, unidade, valor por unidade, status (ativo/inativo)
-  - Formulário inline: nome, unidade (select com M2/ML/M3/UN/KG/HORA/PECA), valor
-  - Botão "Novo serviço" abre o form; "Cancelar" fecha
-- `apps/web/src/app/(dashboard)/obras/[id]/page.tsx` → card "Serviços" adicionado (grid agora 3 colunas)
+### Redesign visual completo do dashboard web
+- Instalado `lucide-react` para ícones em todo o sistema
+- `Sidebar.tsx` — ícones por item de nav, logo com ícone HardHat, avatar do usuário, indicador ativo azul, botão Sair com ícone
+- `obras/page.tsx` — cards com ícone Building2, hover com borda azul, seta "Ver obra" animada, empty state com ícone, contagem de obras
+- `obras/[id]/page.tsx` — cards de seção com ícones + cor por seção (Serviços=violeta, Medições=azul, Pagamentos=verde), metadados com ícones (User, MapPin, Calendar), breadcrumb com ChevronRight
+- `obras/[id]/medicoes/page.tsx` — header com ícone e contagem, tabela com header uppercase, empty state, breadcrumb melhorado
+- `obras/[id]/pagamentos/page.tsx` — botão "Calcular pagamentos" com ícone + cor verde, botão "Realizar" com ícone CheckCircle, empty state orientando o usuário
+- `obras/[id]/servicos/page.tsx` — botão "Novo serviço" violeta com ícone Plus, formulário com X para fechar, labels uppercase, unidade com badge, empty state
 
 ## Arquivos alterados
-- `packages/validators/pagamento.ts`
-- `apps/api/src/modules/pagamentos/pagamentos.service.ts`
-- `apps/api/src/modules/pagamentos/pagamentos.controller.ts`
-- `apps/web/src/app/(dashboard)/obras/[id]/pagamentos/calcular/page.tsx`
+- `apps/web/src/components/Sidebar.tsx`
+- `apps/web/src/app/(dashboard)/obras/page.tsx`
 - `apps/web/src/app/(dashboard)/obras/[id]/page.tsx`
-- `apps/web/src/app/(dashboard)/obras/[id]/servicos/page.tsx` ← novo
+- `apps/web/src/app/(dashboard)/obras/[id]/medicoes/page.tsx`
+- `apps/web/src/app/(dashboard)/obras/[id]/pagamentos/page.tsx`
+- `apps/web/src/app/(dashboard)/obras/[id]/servicos/page.tsx`
+- `apps/web/package.json` ← lucide-react adicionado
 
 ## Decisões tomadas
-- `/calcular` retorna array (todos os funcionários) → mais útil para o gestor, elimina necessidade de seletor de funcionário
-- Guard de duplicata usa `status=pendente` → permite criar novo pagamento para o mesmo período se o anterior já foi realizado
+- Cores por seção: violeta=Serviços, azul=Medições, verde=Pagamentos — consistência visual em toda a navegação
+- Empty states com ícone + texto orientativo — elimina páginas em branco sem contexto
+- Breadcrumb com ChevronRight em vez de `/` — mais moderno e hierárquico
+- Tabelas com header uppercase tracking-wide — padrão de dashboard profissional
 
 ## Onde parou
-Tudo compilando sem erros. API reiniciada automaticamente (tsx watch). Web rodando em localhost:3001.
+Redesign completo. TypeScript compilando sem erros. Web rodando em localhost:3001.
 
 ## Próxima ação (EXATA)
-1. Acessar `http://localhost:3001/obras/[id]/servicos` — verificar listagem e cadastro de novo serviço
-2. Acessar Calcular Pagamentos — verificar se retorna resultado sem erro
-3. Se ok: commit + push
+1. Testar visualmente no navegador todas as páginas redesenhadas
+2. Se aprovado: commit + push
+3. Próximo sprint: funcionários — listagem + detalhe
 
 ## Commit sugerido
 ```
 git add -A
-git commit -m "fix(web+api): calcular pagamentos para todos funcionários, guard duplicata, página de serviços"
+git commit -m "feat(web): redesign visual do dashboard — ícones, empty states, UX melhorado"
 git push origin main
 ```
