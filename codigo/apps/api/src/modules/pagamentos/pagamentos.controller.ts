@@ -11,14 +11,13 @@ export async function handleCalcularPagamento(request: FastifyRequest<{ Params: 
     return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: query.error.errors[0]?.message ?? 'Parâmetros inválidos' })
   }
   try {
-    const calculo = await pagamentosService.calcularPagamento(
+    const calculos = await pagamentosService.calcularTodosPagamentos(
       request.params.obraId,
-      query.data.funcionario_id,
       request.usuario.empresa_id,
       query.data.inicio,
       query.data.fim,
     )
-    return reply.send({ data: calculo })
+    return reply.send({ data: calculos })
   } catch (err: any) {
     return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
   }

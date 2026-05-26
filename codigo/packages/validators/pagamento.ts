@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
 export const calculoPagamentoQuerySchema = z.object({
-  funcionario_id: z.string().uuid({ message: 'ID de funcionário inválido' }),
   inicio: z.string().date('Data de início inválida (formato: YYYY-MM-DD)'),
   fim: z.string().date('Data de fim inválida (formato: YYYY-MM-DD)'),
 })
@@ -21,5 +20,6 @@ export const realizarPagamentoSchema = z.object({
 })
 
 export type CalculoPagamentoQuery = z.infer<typeof calculoPagamentoQuerySchema>
+
 export type CriarPagamentoInput = z.infer<typeof criarPagamentoSchema>
 export type RealizarPagamentoInput = z.infer<typeof realizarPagamentoSchema>

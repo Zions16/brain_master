@@ -92,25 +92,46 @@ async function calcularValorPeriodo(
   }
 }
 
-export async function calcularPagamento(
+export async function calcularTodosPagamentos(
   obraId: string,
-  funcionarioId: string,
   empresaId: string,
   inicio: string,
   fim: string,
-): Promise<CalculoPagamento> {
+): Promise<CalculoPagamento[]> {
   await verificarObraEmpresa(obraId, empresaId)
-  const nomeFuncionario = await verificarFuncionarioEmpresa(funcionarioId, empresaId)
-  const calculo = await calcularValorPeriodo(obraId, funcionarioId, inicio, fim)
 
-  return {
-    funcionario_id: funcionarioId,
-    funcionario_nome: nomeFuncionario,
-    obra_id: obraId,
-    periodo_inicio: inicio,
-    periodo_fim: fim,
-    ...calculo,
+  const { data: medicoes, error } = await supabase
+    .from('medicao')
+    .select('funcionario_id, funcionario:funcionario_id(id, nome)')
+    .eq('obra_id', obraId)
+    .eq('status', 'ativa')
+    .gte('data', inicio)
+    .lte('data', fim)
+
+  if (error) throw { statusCode: 500, message: 'Erro ao buscar medições' }
+
+  const funcionariosMap = new Map<string, string>()
+  for (const m of medicoes ?? []) {
+    const func = m.funcionario as unknown as { id: string; nome: string } | null
+    if (func && !funcionariosMap.has(func.id)) {
+      funcionariosMap.set(func.id, func.nome)
+    }
   }
+
+  const resultados: CalculoPagamento[] = []
+  for (const [funcionarioId, nomeFuncionario] of funcionariosMap) {
+    const calculo = await calcularValorPeriodo(obraId, funcionarioId, inicio, fim)
+    resultados.push({
+      funcionario_id: funcionarioId,
+      funcionario_nome: nomeFuncionario,
+      obra_id: obraId,
+      periodo_inicio: inicio,
+      periodo_fim: fim,
+      ...calculo,
+    })
+  }
+
+  return resultados
 }
 
 export async function listarPagamentos(obraId: string, empresaId: string): Promise<Pagamento[]> {
@@ -144,6 +165,20 @@ export async function criarPagamento(
 
   if (calculo.total_medicoes === 0) {
     throw { statusCode: 400, message: 'Nenhuma medição ativa encontrada para o período informado' }
+  }
+
+  const { data: existente } = await supabase
+    .from('pagamento')
+    .select('id')
+    .eq('obra_id', obraId)
+    .eq('funcionario_id', input.funcionario_id)
+    .eq('periodo_inicio', input.periodo_inicio)
+    .eq('periodo_fim', input.periodo_fim)
+    .eq('status', 'pendente')
+    .maybeSingle()
+
+  if (existente) {
+    throw { statusCode: 409, message: 'Já existe um pagamento pendente para este funcionário neste período' }
   }
 
   const { data, error } = await supabase

@@ -22,7 +22,7 @@ interface CalculoItem {
 
 async function calcularPagamentos(obraId: string, periodoInicio: string, periodoFim: string): Promise<CalculoItem[]> {
   const { data } = await api.get(`/api/v1/obras/${obraId}/pagamentos/calcular`, {
-    params: { periodo_inicio: periodoInicio, periodo_fim: periodoFim },
+    params: { inicio: periodoInicio, fim: periodoFim },
   })
   return data
 }

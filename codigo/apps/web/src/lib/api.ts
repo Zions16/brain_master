@@ -14,7 +14,13 @@ api.interceptors.request.use((config) => {
 })
 
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    // A API envolve respostas de sucesso em { data: resultado } — desembrulha aqui
+    if (res.data !== null && typeof res.data === 'object' && 'data' in res.data) {
+      res.data = res.data.data
+    }
+    return res
+  },
   (error) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
       document.cookie = 'bm_token=; path=/; max-age=0'

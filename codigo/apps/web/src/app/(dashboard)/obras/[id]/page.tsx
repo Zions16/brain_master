@@ -65,7 +65,15 @@ export default function ObraDetailPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Link
+          href={`/obras/${id}/servicos`}
+          className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow block"
+        >
+          <h2 className="font-semibold text-slate-900 mb-1">Serviços</h2>
+          <p className="text-slate-500 text-sm">Gerenciar serviços e valores por unidade</p>
+        </Link>
+
         <Link
           href={`/obras/${id}/medicoes`}
           className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow block"
