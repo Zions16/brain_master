@@ -45,6 +45,50 @@ Arquivo de configuração criado como `.ts`. Next.js 14 só aceita `next.config.
 
 ---
 
+## [2026-05-26] Duplo desembrulhamento de resposta da API no web
+
+**Contexto:** Sprint 7 — teste de integração (serviços + calcular pagamentos)  
+**Sintoma:** Página de Serviços mostrava "Erro ao carregar serviços." e Calcular Pagamentos não exibia resultados após clicar.
+
+**Causa raiz:**  
+O interceptor do Axios em `src/lib/api.ts` já desembrulha `{ data: X }` → `X` automaticamente. Funções novas fizeram `return data.data` em vez de `return data`, resultando em `undefined` nas duas chamadas.
+
+```typescript
+// ❌ Errado — duplo desembrulhamento
+const { data } = await api.get('/api/v1/obras/:id/servicos')
+return data.data  // data já é o array, data.data = undefined
+
+// ✅ Correto — interceptor já desembrulhou
+const { data } = await api.get('/api/v1/obras/:id/servicos')
+return data
+```
+
+**Arquivos corrigidos:**  
+- `apps/web/src/app/(dashboard)/obras/[id]/servicos/page.tsx`  
+- `apps/web/src/app/(dashboard)/obras/[id]/pagamentos/calcular/page.tsx`
+
+**Lição:** Ao criar nova chamada de API no web, sempre usar `return data` — nunca `return data.data`. O interceptor já resolve o envelope.
+
+---
+
+## [2026-05-26] Calcular pagamentos exigia `funcionario_id` mas web não enviava
+
+**Contexto:** Sprint 7 — teste de integração  
+**Sintoma:** `GET /api/v1/obras/:id/pagamentos/calcular` retornava 400 com "Erro ao calcular. Verifique o período."
+
+**Causa raiz (2 problemas simultâneos):**  
+1. Web enviava `periodo_inicio/periodo_fim`, API esperava `inicio/fim`  
+2. `calculoPagamentoQuerySchema` exigia `funcionario_id` (UUID), mas o web nunca enviava — a tela de calcular não tem seletor de funcionário
+
+**Solução:**  
+- Removido `funcionario_id` do schema — endpoint calcula todos os funcionários da obra  
+- Nova função `calcularTodosPagamentos()` busca funcionários distintos com medições ativas no período  
+- Web corrigido: params `inicio/fim`
+
+**Lição:** Ao projetar endpoint de cálculo agregado, não exigir filtro por entidade filha (funcionário) — o gestor quer ver todos de uma vez.
+
+---
+
 ## [2026-05-26] `React.use(params)` não existe no Next.js 14
 
 **Contexto:** Sprint 7 — páginas com dynamic routes `[id]`  

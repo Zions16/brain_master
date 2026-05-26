@@ -134,6 +134,81 @@ app/
 
 ---
 
+## Padrão: Resposta da API no Web — nunca usar `data.data`
+
+**Onde:** Qualquer função de fetch em `apps/web/src/`  
+**Status:** Confirmado no Sprint 7 (teste de integração)
+
+O interceptor em `src/lib/api.ts` já desembrulha `{ data: X }` → `X` para todas as respostas:
+
+```typescript
+// src/lib/api.ts (NÃO modificar este comportamento)
+api.interceptors.response.use((res) => {
+  if (res.data !== null && typeof res.data === 'object' && 'data' in res.data) {
+    res.data = res.data.data  // desembrulha aqui
+  }
+  return res
+})
+```
+
+**Uso correto em todas as pages:**
+```typescript
+// ✅ Correto
+const { data } = await api.get('/api/v1/obras')
+return data  // já é o array/objeto final
+
+// ❌ Errado — duplo desembrulhamento → retorna undefined
+return data.data
+```
+
+---
+
+## Padrão: Guard de duplicata antes de INSERT no Supabase
+
+**Onde:** Qualquer `criarX()` no service da API onde duplicatas são problema  
+**Status:** Implementado em `pagamentos.service.ts` — Sprint 7
+
+Antes de inserir, verificar existência com `.maybeSingle()`:
+
+```typescript
+const { data: existente } = await supabase
+  .from('pagamento')
+  .select('id')
+  .eq('obra_id', obraId)
+  .eq('funcionario_id', input.funcionario_id)
+  .eq('periodo_inicio', input.periodo_inicio)
+  .eq('periodo_fim', input.periodo_fim)
+  .eq('status', 'pendente')
+  .maybeSingle()
+
+if (existente) throw { statusCode: 409, message: 'Já existe um pagamento pendente para este período' }
+```
+
+**Por que `.maybeSingle()` e não `.single()`:**  
+`.single()` lança erro se não encontrar nenhum registro. `.maybeSingle()` retorna `null` se não encontrar — comportamento correto para verificação de existência.
+
+---
+
+## Padrão: Endpoint de cálculo agregado — não exigir filtro por entidade filha
+
+**Onde:** Routes de cálculo/relatório  
+**Status:** Refatorado no Sprint 7
+
+Ao projetar endpoint de cálculo que o gestor vai usar:
+
+```typescript
+// ❌ Exige seleção prévia de funcionário — ruim para o gestor
+GET /obras/:id/pagamentos/calcular?funcionario_id=UUID&inicio=...&fim=...
+
+// ✅ Calcula para todos, gestor vê tudo de uma vez
+GET /obras/:id/pagamentos/calcular?inicio=...&fim=...
+// → retorna array com um item por funcionário que tem medições no período
+```
+
+**Regra:** Se o usuário da rota é o GESTOR e o contexto é "calcular/visualizar tudo", o endpoint deve agregar sem exigir filtro por entidade filha.
+
+---
+
 ## Padrão: Verificação de TypeScript antes de rodar
 
 Sempre rodar `npm run type-check` antes de `npm run dev` para pegar erros de tipo sem precisar aguardar o servidor subir.
