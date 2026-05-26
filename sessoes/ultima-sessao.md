@@ -1,68 +1,80 @@
 # Última Sessão
 
 ## Data
-2026-05-22
+2026-05-26
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 6 — Pagamentos (concluído) + Bugfix crítico session pollution
+Fase 1 — Sprint 7 — Dashboard Web (Next.js) — Setup completo
 
 ## O que foi feito
 
-### Sprint 6 — Pagamentos (concluído e testado)
-- `packages/validators/pagamento.ts` — calculoPagamentoQuerySchema, criarPagamentoSchema, realizarPagamentoSchema
-- `modules/pagamentos/` — 4 endpoints:
-  - `GET /:obraId/pagamentos/calcular` — agrega medições ativas por funcionário+período
-  - `GET /:obraId/pagamentos` — lista com join em funcionário
-  - `POST /:obraId/pagamentos` — valor_total calculado server-side, rejeita se 0 medições
-  - `PATCH /:obraId/pagamentos/:id/realizar` — pendente→realizado, registra pago_por
+### Sprint 7 — Scaffold do dashboard web (Next.js 14)
+- Arquivos de configuração: `next.config.js`, `tsconfig.json`, `tailwind.config.ts`, `postcss.config.js`
+- `src/middleware.ts` — proteção de rotas via cookie `bm_token`
+- `src/lib/api.ts` — cliente Axios apontando para a API Fastify (lê token do cookie)
+- `src/store/auth.ts` — Zustand com persist (localStorage) para dados do usuário
+- `src/components/Providers.tsx` — QueryClient wrapper
+- `src/components/Sidebar.tsx` — navegação lateral com logout
+- `src/components/LoadingSpinner.tsx` — spinner reutilizável
+- `src/app/layout.tsx` + `globals.css` + `page.tsx` (redirect /obras)
+- `src/app/(auth)/login/page.tsx` — formulário de login → chama POST /api/v1/auth/login
+- `src/app/(dashboard)/layout.tsx` — layout com Sidebar
+- `src/app/(dashboard)/obras/page.tsx` — lista de obras em cards com status
+- `src/app/(dashboard)/obras/[id]/page.tsx` — detalhe da obra com links para sub-páginas
+- `src/app/(dashboard)/obras/[id]/medicoes/page.tsx` — tabela de medições
+- `src/app/(dashboard)/obras/[id]/pagamentos/page.tsx` — tabela de pagamentos + botão realizar
+- `src/app/(dashboard)/obras/[id]/pagamentos/calcular/page.tsx` — calcular por período + gerar
+- `src/app/(dashboard)/funcionarios/page.tsx` — tabela de funcionários
 
-### Bugfix crítico — session pollution (auth.service.ts)
-**Causa raiz descoberta:** `supabase.auth.signInWithPassword()` e `refreshSession()` chamados no singleton `supabase` salvavam o JWT do usuário na sessão interna. Todos os queries PostgREST posteriores enviavam `Authorization: Bearer {userJwt}` (role: authenticated) em vez da service key (role: service_role), ativando RLS.
+### Segurança corrigida
+- `apps/web/.env` — removido `SUPABASE_SERVICE_KEY` (fica SOMENTE na API)
+- Adicionado `NEXT_PUBLIC_API_URL=http://localhost:3333`
 
-**Sintoma:** INSERT passava (políticas WITH CHECK satisfeitas pelo usuário GESTOR), mas UPDATE falhava com `42501: new row violates row-level security policy` porque a policy UPDATE tem `status = 'pendente'` no WITH CHECK implícito, que falha ao tentar setar `status = 'realizado'`.
+## Arquivos criados
+- `codigo/apps/web/next.config.js`
+- `codigo/apps/web/tsconfig.json`
+- `codigo/apps/web/tailwind.config.ts`
+- `codigo/apps/web/postcss.config.js`
+- `codigo/apps/web/src/middleware.ts`
+- `codigo/apps/web/src/lib/api.ts`
+- `codigo/apps/web/src/store/auth.ts`
+- `codigo/apps/web/src/components/Providers.tsx`
+- `codigo/apps/web/src/components/Sidebar.tsx`
+- `codigo/apps/web/src/components/LoadingSpinner.tsx`
+- `codigo/apps/web/src/app/globals.css`
+- `codigo/apps/web/src/app/layout.tsx`
+- `codigo/apps/web/src/app/page.tsx`
+- `codigo/apps/web/src/app/(auth)/login/page.tsx`
+- `codigo/apps/web/src/app/(dashboard)/layout.tsx`
+- `codigo/apps/web/src/app/(dashboard)/obras/page.tsx`
+- `codigo/apps/web/src/app/(dashboard)/obras/[id]/page.tsx`
+- `codigo/apps/web/src/app/(dashboard)/obras/[id]/medicoes/page.tsx`
+- `codigo/apps/web/src/app/(dashboard)/obras/[id]/pagamentos/page.tsx`
+- `codigo/apps/web/src/app/(dashboard)/obras/[id]/pagamentos/calcular/page.tsx`
+- `codigo/apps/web/src/app/(dashboard)/funcionarios/page.tsx`
 
-**Fix:** `authOpsClient` isolado em `auth.service.ts`, exclusivo para `signInWithPassword`, `refreshSession` e `signOut`.
-
-### Padrão de 3 clientes Supabase (definitivo)
-```
-supabase (service key)       → DB queries APENAS — nunca auth ops
-authVerifyClient (service key) → auth.getUser(jwt) no middleware autenticar
-authOpsClient (service key)  → signInWithPassword / refreshSession / signOut
-```
-
-## Arquivos alterados nesta sessão
-- `codigo/packages/validators/pagamento.ts` — criado
-- `codigo/packages/validators/index.ts` — export pagamento
-- `codigo/apps/api/src/modules/pagamentos/` (3 arquivos) — criados
-- `codigo/apps/api/src/app.ts` — pagamentosRoutes registrado
-- `codigo/apps/api/src/modules/auth/auth.service.ts` — authOpsClient isolado (bugfix)
-- `codigo/apps/api/src/lib/supabase.ts` — mantido limpo, sem auth ops
-
-## Testes realizados (10/10 ✅)
-1. POST /auth/login ✅
-2. GET /obras ✅
-3. GET /funcionarios ✅
-4. GET /obras/:id/servicos ✅
-5. POST /obras/:id/medicoes ✅ (valor_calculado server-side)
-6. GET /obras/:id/pagamentos/calcular ✅ (breakdown por serviço)
-7. POST /obras/:id/pagamentos ✅ (status: pendente, R$ calculado)
-8. PATCH /obras/:id/pagamentos/:id/realizar ✅ (status: realizado, pago_por registrado)
-9. PATCH realizar de novo ✅ (HTTP 400 — Pagamento já foi realizado)
-10. Sem token ✅ (HTTP 401)
-
-## Commits desta sessão
-- `3a7c1f1` — feat(api): sprint 6 — módulo de pagamentos
-- `515d6f4` — docs: encerramento sessão sprint 6
-- `1c7a8cd` — fix(api): session pollution em auth.service — supabase singleton corrompido por signInWithPassword
+## Decisões tomadas
+- Web chama API Fastify (não Supabase diretamente) → reutiliza toda lógica de negócio dos sprints 2-6
+- Token JWT guardado em cookie `bm_token` (legível pelo middleware Next.js) + Zustand para dados do usuário
+- `React.use(params)` descartado — Next.js 14 usa params como objeto síncrono (Next.js 15+)
+- `next.config.ts` descartado — Next.js 14 só aceita `.js` ou `.mjs`
 
 ## Onde parou
-API completa com todos os módulos da Fase 1 funcionando e testados:
-auth + obras + funcionários + serviços + medições + pagamentos
+Sprint 7 setup concluído. App sobe limpo em http://localhost:3000.
+TypeScript sem erros. Middleware funciona (redirect 307 → /login sem cookie).
 
 ## Próxima ação (EXATA)
-Sprint 7 — Dashboard Web (Next.js):
-1. Setup: auth com Supabase, layout base, proteção de rotas
-2. Página de obras (lista + detalhe)
-3. Página de funcionários
-4. Página de medições por obra
-5. Página de pagamentos por obra
+Testar o fluxo completo manualmente:
+1. Subir a API: `cd codigo/apps/api && npm run dev`
+2. Subir o web: `cd codigo/apps/web && npm run dev`
+3. Acessar http://localhost:3000 → deve redirecionar para /login
+4. Fazer login com usuário real do Supabase
+5. Verificar se obras carregam, se navegação funciona
+6. Testar calcular pagamentos + realizar pagamento
+
+## Commit sugerido
+```
+git add -A
+git commit -m "feat(web): sprint 7 — scaffold completo do dashboard (Next.js 14)"
+git push origin main
+```

@@ -12,3 +12,4 @@
 | 2026-05-22 | Sprint 4 — CRUD de funcionários + produção por período; 2 bugfixes em obras e auth | Concluído |
 | 2026-05-22 | Sprint 5 — Serviços + Medições completas; bugfix session pollution + obra_vinculada ausente | Concluído |
 | 2026-05-22 | Sprint 6 — Pagamentos (4 endpoints); bugfix raiz session pollution em auth.service.ts | Concluído |
+- 2026-05-26 | Sprint 7 | feat(web): scaffold completo do dashboard (Next.js 14) — login, obras, medições, pagamentos, funcionários

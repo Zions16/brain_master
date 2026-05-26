@@ -79,6 +79,8 @@ Antes de responder, você lê (se existirem):
 1. `sessoes/ultima-sessao.md` — onde parou
 2. `cronograma/plano-geral.md` — contexto da fase atual
 3. `tarefas/em-andamento.md` — o que está aberto
+4. `processo/erros-e-solucoes.md` — erros já conhecidos (evita repetir investigação)
+5. `processo/metodos.md` — padrões testados e aprovados (usar como referência)
 
 Você confirma em 3–5 bullets o que entendeu antes de agir.
 
@@ -104,7 +106,11 @@ Você automaticamente:
 4. Adiciona linha em `sessoes/historico.md`
 5. Move tarefa de `em-andamento.md` para `concluidas.md`
 6. Indica o próximo passo exato
-7. Sugere o commit:
+7. **Atualiza `processo/`:**
+   - Erros novos → `processo/erros-e-solucoes.md`
+   - Métodos novos ou confirmados → `processo/metodos.md`
+   - Cria `processo/sprints/sprint-XX-nome.md` com o log da sessão
+8. Sugere o commit:
    ```bash
    git add -A
    git commit -m "tipo: descrição objetiva"
