@@ -20,7 +20,6 @@ const NAV_BY_PERFIL: Record<Perfil, NavItem[]> = {
   ],
   ENGENHEIRO: [
     { href: '/engenheiro', label: 'Início', icon: HardHat },
-    { href: '/obras', label: 'Obras', icon: Building2 },
   ],
   FUNCIONARIO: [
     { href: '/minha-producao', label: 'Minha Produção', icon: BarChart2 },

@@ -73,6 +73,7 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
   const qc = useQueryClient()
   const usuario = useAuthStore((s) => s.usuario)
   const isGestor = usuario?.perfil === 'GESTOR'
+  const isEngenheiro = usuario?.perfil === 'ENGENHEIRO'
 
   const { data: medicoes, isLoading, isError } = useQuery({
     queryKey: ['medicoes', id],
@@ -189,7 +190,9 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
   return (
     <div>
       <nav className="flex items-center gap-1.5 text-sm text-slate-400 mb-5">
-        <Link href="/obras" className="hover:text-slate-700 transition-colors">Obras</Link>
+        <Link href={isEngenheiro ? '/engenheiro' : '/obras'} className="hover:text-slate-700 transition-colors">
+          {isEngenheiro ? 'Início' : 'Obras'}
+        </Link>
         <ChevronRight size={14} />
         <Link href={`/obras/${id}`} className="hover:text-slate-700 transition-colors">Detalhe</Link>
         <ChevronRight size={14} />
@@ -325,7 +328,7 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
                   onChange={(e) => setForm((f) => ({ ...f, quantidade: e.target.value }))}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                {servicoSelecionado && (
+                {servicoSelecionado && !isEngenheiro && (
                   <p className="text-xs text-slate-400 mt-1">
                     {isDiaria
                       ? `R$ ${servicoSelecionado.valor_pagamento.toFixed(2)}/dia por funcionário`
@@ -469,7 +472,7 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
                 <th className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Funcionário</th>
                 <th className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide hidden sm:table-cell">Serviço</th>
                 <th className="text-right px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Qtd.</th>
-                <th className="text-right px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Valor</th>
+                {!isEngenheiro && <th className="text-right px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Valor</th>}
                 <th className="text-center px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Status</th>
                 {isGestor && <th className="px-5 py-3.5" />}
               </tr>
@@ -486,9 +489,11 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
                     <td className="px-5 py-4 text-right text-slate-700">
                       {m.quantidade} <span className="text-slate-400 text-xs">{m.servico?.unidade_medida ?? ''}</span>
                     </td>
-                    <td className="px-5 py-4 text-right font-semibold text-slate-900">
-                      {m.valor_calculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </td>
+                    {!isEngenheiro && (
+                      <td className="px-5 py-4 text-right font-semibold text-slate-900">
+                        {m.valor_calculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </td>
+                    )}
                     <td className="px-5 py-4 text-center">
                       <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_CLASS[m.status]}`}>
                         {STATUS_LABEL[m.status]}
@@ -523,7 +528,7 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
                   {/* Painel de cancelamento inline */}
                   {cancelando === m.id && (
                     <tr key={`cancel-${m.id}`}>
-                      <td colSpan={isGestor ? 7 : 6} className="px-5 py-3 bg-red-50 border-t border-red-100">
+                      <td colSpan={isGestor ? 7 : isEngenheiro ? 5 : 6} className="px-5 py-3 bg-red-50 border-t border-red-100">
                         <div className="flex items-center gap-3">
                           <input
                             autoFocus
