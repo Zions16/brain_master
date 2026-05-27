@@ -1,7 +1,8 @@
 'use client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { ChevronRight, Ruler, Plus, X, Users, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
@@ -71,9 +72,15 @@ const EMPTY_FORM = {
 export default function MedicoesPage({ params }: { params: { id: string } }) {
   const { id } = params
   const qc = useQueryClient()
+  const searchParams = useSearchParams()
   const usuario = useAuthStore((s) => s.usuario)
   const isGestor = usuario?.perfil === 'GESTOR'
   const isEngenheiro = usuario?.perfil === 'ENGENHEIRO'
+
+  // Abre o form automaticamente quando vem de ?nova=1 (botão "Registrar medição" do engenheiro)
+  useEffect(() => {
+    if (searchParams.get('nova') === '1') setFormAberto(true)
+  }, [searchParams])
 
   const { data: medicoes, isLoading, isError } = useQuery({
     queryKey: ['medicoes', id],
@@ -190,13 +197,21 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
   return (
     <div>
       <nav className="flex items-center gap-1.5 text-sm text-slate-400 mb-5">
-        <Link href={isEngenheiro ? '/engenheiro' : '/obras'} className="hover:text-slate-700 transition-colors">
-          {isEngenheiro ? 'Início' : 'Obras'}
-        </Link>
-        <ChevronRight size={14} />
-        <Link href={`/obras/${id}`} className="hover:text-slate-700 transition-colors">Detalhe</Link>
-        <ChevronRight size={14} />
-        <span className="text-slate-800 font-medium">Medições</span>
+        {isEngenheiro ? (
+          <>
+            <Link href="/engenheiro" className="hover:text-slate-700 transition-colors">Início</Link>
+            <ChevronRight size={14} />
+            <span className="text-slate-800 font-medium">Medições</span>
+          </>
+        ) : (
+          <>
+            <Link href="/obras" className="hover:text-slate-700 transition-colors">Obras</Link>
+            <ChevronRight size={14} />
+            <Link href={`/obras/${id}`} className="hover:text-slate-700 transition-colors">Detalhe</Link>
+            <ChevronRight size={14} />
+            <span className="text-slate-800 font-medium">Medições</span>
+          </>
+        )}
       </nav>
 
       <div className="flex items-center justify-between mb-6">

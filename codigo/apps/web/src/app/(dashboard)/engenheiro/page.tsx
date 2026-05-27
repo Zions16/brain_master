@@ -1,7 +1,7 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { Building2, Ruler, AlertTriangle, ChevronRight, Plus } from 'lucide-react'
+import { Building2, Ruler, AlertTriangle, Plus } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { useAuthStore } from '@/store/auth'
@@ -95,11 +95,11 @@ export default function EngenheiroDashboard() {
             {/* Ações do engenheiro para esta obra */}
             <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
               <Link
-                href={`/obras/${obra.id}/medicoes`}
+                href={`/obras/${obra.id}/medicoes?nova=1`}
                 className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
               >
                 <Plus size={12} />
-                Nova medição
+                Registrar medição
               </Link>
               <Link
                 href={`/obras/${obra.id}/medicoes`}
@@ -107,13 +107,6 @@ export default function EngenheiroDashboard() {
               >
                 <Ruler size={12} />
                 Ver medições
-              </Link>
-              <Link
-                href={`/obras/${obra.id}`}
-                className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-600 ml-auto"
-              >
-                Detalhe
-                <ChevronRight size={12} />
               </Link>
             </div>
           </div>
