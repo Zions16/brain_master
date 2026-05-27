@@ -38,6 +38,7 @@ export interface Usuario {
   empresa_id: string
   nome: string
   perfil: Perfil
+  token_acesso?: string
   created_at: string
 }
 

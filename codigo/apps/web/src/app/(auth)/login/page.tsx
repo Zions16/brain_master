@@ -8,11 +8,12 @@ import type { AuthResponse } from '@brain-master/shared/tipos'
 
 type TipoPerfil = 'GESTOR' | 'ENGENHEIRO' | 'FUNCIONARIO'
 
-const PERFIS: { tipo: TipoPerfil; label: string; desc: string; icon: React.ElementType; cor: string; iconCor: string }[] = [
+const PERFIS: { tipo: TipoPerfil; label: string; desc: string; prefixo: string; icon: React.ElementType; cor: string; iconCor: string }[] = [
   {
     tipo: 'GESTOR',
     label: 'Gestor',
     desc: 'Acesso completo — obras, equipe e financeiro',
+    prefixo: '',
     icon: Building2,
     cor: 'border-indigo-400 bg-indigo-50 hover:bg-indigo-100',
     iconCor: 'text-indigo-600',
@@ -20,7 +21,8 @@ const PERFIS: { tipo: TipoPerfil; label: string; desc: string; icon: React.Eleme
   {
     tipo: 'ENGENHEIRO',
     label: 'Engenheiro',
-    desc: 'Obras e medições — sem valores financeiros',
+    desc: 'Obras e medições — acesso por token',
+    prefixo: 'ENG-',
     icon: HardHat,
     cor: 'border-blue-400 bg-blue-50 hover:bg-blue-100',
     iconCor: 'text-blue-600',
@@ -29,6 +31,7 @@ const PERFIS: { tipo: TipoPerfil; label: string; desc: string; icon: React.Eleme
     tipo: 'FUNCIONARIO',
     label: 'Funcionário',
     desc: 'Minha produção — acesso por token',
+    prefixo: 'FUN-',
     icon: User,
     cor: 'border-emerald-400 bg-emerald-50 hover:bg-emerald-100',
     iconCor: 'text-emerald-600',
@@ -80,7 +83,8 @@ export default function LoginPage() {
       const { data } = await api.post<AuthResponse>('/api/v1/auth/token-login', { token: token.toUpperCase() })
       document.cookie = `bm_token=${data.access_token}; path=/; max-age=604800; SameSite=Lax`
       setAuth(data.usuario)
-      router.push('/minha-producao')
+      const destino = data.usuario.perfil === 'ENGENHEIRO' ? '/engenheiro' : '/minha-producao'
+      router.push(destino)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Token inválido'
       setErro(msg)
@@ -118,7 +122,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        {perfil === 'FUNCIONARIO' && (
+        {(perfil === 'FUNCIONARIO' || perfil === 'ENGENHEIRO') && (
           <form onSubmit={handleLoginToken} className="space-y-4">
             <button type="button" onClick={voltar}
               className="text-xs text-slate-400 hover:text-slate-700 mb-1 flex items-center gap-1 transition-colors">
@@ -129,15 +133,17 @@ export default function LoginPage() {
               <label className="block text-sm font-medium text-slate-700 mb-1">Token de acesso</label>
               <input
                 type="text"
-                placeholder="FUN-XXXXX"
+                placeholder={perfil === 'ENGENHEIRO' ? 'ENG-XXXXX' : 'FUN-XXXXX'}
                 value={token}
                 onChange={(e) => setToken(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))}
                 maxLength={9}
                 autoFocus
                 required
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-emerald-500 uppercase"
+                className={`w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono tracking-widest focus:outline-none focus:ring-2 uppercase ${
+                  perfil === 'ENGENHEIRO' ? 'focus:ring-blue-500' : 'focus:ring-emerald-500'
+                }`}
               />
-              <p className="text-xs text-slate-400 mt-1.5">Solicite seu token ao responsável pela obra</p>
+              <p className="text-xs text-slate-400 mt-1.5">Solicite seu token ao responsável</p>
             </div>
 
             {erro && (
@@ -147,14 +153,18 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || token.replace(/-/g, '').length < 8}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors"
+              className={`w-full disabled:opacity-60 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors ${
+                perfil === 'ENGENHEIRO'
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+              }`}
             >
               {loading ? 'Verificando...' : 'Entrar com token'}
             </button>
           </form>
         )}
 
-        {(perfil === 'GESTOR' || perfil === 'ENGENHEIRO') && (
+        {perfil === 'GESTOR' && (
           <form onSubmit={handleLoginEmail} className="space-y-4">
             <button type="button" onClick={voltar}
               className="text-xs text-slate-400 hover:text-slate-700 mb-1 flex items-center gap-1 transition-colors">

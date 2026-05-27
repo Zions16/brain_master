@@ -19,7 +19,7 @@ const STATUS_DOT: Record<StatusObra, string> = {
 }
 
 async function fetchObras(): Promise<Obra[]> {
-  const { data } = await api.get('/api/v1/obras')
+  const { data } = await api.get('/api/v1/obras/minhas')
   return data
 }
 

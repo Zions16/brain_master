@@ -55,18 +55,34 @@ export async function handleTokenLogin(request: FastifyRequest, reply: FastifyRe
     return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: body.error.errors[0]?.message ?? 'Token inválido' })
   }
 
+  const { token } = body.data
+
   try {
-    const funcionario = await authService.buscarFuncionarioPorToken(body.data.token)
-    const access_token = await reply.jwtSign(
-      { sub: funcionario.id, empresa_id: funcionario.empresa_id, nome: funcionario.nome, perfil: 'FUNCIONARIO' },
-      { expiresIn: '7d' },
-    )
-    return reply.status(200).send({
-      data: {
-        access_token,
-        usuario: { id: funcionario.id, empresa_id: funcionario.empresa_id, nome: funcionario.nome, perfil: 'FUNCIONARIO' },
-      },
-    })
+    if (token.startsWith('FUN-')) {
+      const funcionario = await authService.buscarFuncionarioPorToken(token)
+      const access_token = await reply.jwtSign(
+        { sub: funcionario.id, empresa_id: funcionario.empresa_id, nome: funcionario.nome, perfil: 'FUNCIONARIO' },
+        { expiresIn: '7d' },
+      )
+      return reply.status(200).send({
+        data: {
+          access_token,
+          usuario: { id: funcionario.id, empresa_id: funcionario.empresa_id, nome: funcionario.nome, perfil: 'FUNCIONARIO' },
+        },
+      })
+    } else {
+      const engenheiro = await authService.buscarEngenheirooPorToken(token)
+      const access_token = await reply.jwtSign(
+        { sub: engenheiro.id, empresa_id: engenheiro.empresa_id, nome: engenheiro.nome, perfil: 'ENGENHEIRO' },
+        { expiresIn: '7d' },
+      )
+      return reply.status(200).send({
+        data: {
+          access_token,
+          usuario: { id: engenheiro.id, empresa_id: engenheiro.empresa_id, nome: engenheiro.nome, perfil: 'ENGENHEIRO' },
+        },
+      })
+    }
   } catch (err: any) {
     return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Unauthorized', message: err.message })
   }

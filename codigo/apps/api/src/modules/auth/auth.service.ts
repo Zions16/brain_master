@@ -79,3 +79,18 @@ export async function buscarFuncionarioPorToken(token: string): Promise<Funciona
 
   return data as Funcionario
 }
+
+export async function buscarEngenheirooPorToken(token: string): Promise<UsuarioSession> {
+  const { data, error } = await supabase
+    .from('usuario')
+    .select('id, empresa_id, nome, perfil')
+    .eq('token_acesso', token.toUpperCase())
+    .eq('perfil', 'ENGENHEIRO')
+    .single()
+
+  if (error || !data) {
+    throw { statusCode: 401, message: 'Token inválido ou engenheiro não encontrado' }
+  }
+
+  return data as UsuarioSession
+}

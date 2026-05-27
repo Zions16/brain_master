@@ -100,14 +100,16 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
   const { data: pagamentos, isLoading: loadingPag } = useQuery({
     queryKey: ['pagamentos', id],
     queryFn: () => fetchPagamentos(id),
+    enabled: verFinanceiro,
   })
 
   const { data: calculo, isLoading: loadingCalc, isFetching } = useQuery({
     queryKey: ['calculo-dash', id, filtroAtivo.inicio, filtroAtivo.fim],
     queryFn: () => fetchCalculo(id, filtroAtivo.inicio, filtroAtivo.fim),
+    enabled: verFinanceiro,
   })
 
-  if (loadingPag) return <LoadingSpinner />
+  if (verFinanceiro && loadingPag) return <LoadingSpinner />
 
   // ── Métricas ────────────────────────────────────────────────────────────────
 
