@@ -82,7 +82,7 @@
     border-radius: var(--radius-sm);
   }
 
-  /* Entrada com fade-up — iniciar opaque 0 */
+  /* Entrada com fade-up escalonado */
   .animate-stagger > * {
     opacity: 0;
     animation: fade-up 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
@@ -94,7 +94,6 @@
   .animate-stagger > *:nth-child(5) { animation-delay: 240ms; }
   .animate-stagger > *:nth-child(6) { animation-delay: 300ms; }
   .animate-stagger > *:nth-child(n+7) { animation-delay: 360ms; }
-}
 
   /* Micro-interação automática em todos os botões primários coloridos */
   button[class*="bg-blue-6"]:not([disabled]),
