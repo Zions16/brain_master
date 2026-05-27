@@ -3,20 +3,12 @@ import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useState } from 'react'
 import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
+  ResponsiveContainer, BarChart, Bar, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, Cell,
 } from 'recharts'
 import {
-  ChevronRight, LayoutDashboard, TrendingUp, Banknote,
-  Clock, Users, Search,
+  ChevronRight, LayoutDashboard, Banknote, Clock,
+  Users, TrendingUp, Award, Search, AlertCircle,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
@@ -39,102 +31,104 @@ async function fetchCalculo(obraId: string, inicio: string, fim: string): Promis
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function mesLabel(dataStr: string) {
-  const d = new Date(dataStr + 'T00:00:00')
+function brl(v: number) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function mesLabel(s: string) {
+  const d = new Date(s + 'T00:00:00')
   return d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
 }
 
-function brl(valor: number) {
-  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
-function agruparPorMes(pagamentos: Pagamento[]) {
-  const mapa = new Map<string, { pago: number; pendente: number }>()
-
-  for (const p of pagamentos) {
-    const chave = mesLabel(p.periodo_fim)
-    const atual = mapa.get(chave) ?? { pago: 0, pendente: 0 }
-    if (p.status === 'realizado') atual.pago += p.valor_total
-    else atual.pendente += p.valor_total
-    mapa.set(chave, atual)
+function agruparPorMes(pags: Pagamento[]) {
+  const m = new Map<string, { mes: string; pago: number; pendente: number }>()
+  for (const p of pags) {
+    const key = mesLabel(p.periodo_fim)
+    const cur = m.get(key) ?? { mes: key, pago: 0, pendente: 0 }
+    if (p.status === 'realizado') cur.pago += p.valor_total
+    else cur.pendente += p.valor_total
+    m.set(key, cur)
   }
-
-  return Array.from(mapa.entries()).map(([mes, vals]) => ({ mes, ...vals }))
+  return Array.from(m.values())
 }
 
-// ─── Tooltip personalizado ────────────────────────────────────────────────────
-
-function TooltipBRL({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-lg p-3 text-sm">
-      <p className="font-semibold text-slate-800 mb-2">{label}</p>
+    <div className="bg-white border border-slate-200 rounded-xl shadow-lg p-3 text-sm min-w-[160px]">
+      <p className="font-semibold text-slate-700 mb-2 text-xs uppercase tracking-wide">{label}</p>
       {payload.map((p: any) => (
-        <p key={p.name} style={{ color: p.color }} className="flex justify-between gap-4">
-          <span>{p.name}:</span>
-          <span className="font-semibold">{brl(p.value)}</span>
-        </p>
+        <div key={p.name} className="flex items-center justify-between gap-4">
+          <span className="flex items-center gap-1.5 text-slate-500 text-xs">
+            <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+            {p.name}
+          </span>
+          <span className="font-bold text-slate-900 text-xs">{brl(p.value)}</span>
+        </div>
       ))}
     </div>
   )
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
+// ─── Página ───────────────────────────────────────────────────────────────────
 
 export default function DashboardPage({ params }: { params: { id: string } }) {
   const { id } = params
 
-  // Período padrão: últimos 90 dias
   const hoje = new Date().toISOString().split('T')[0]
-  const noventa = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  const [periodo, setPeriodo] = useState({ inicio: noventa, fim: hoje })
-  const [filtroPeriodo, setFiltroPeriodo] = useState({ inicio: noventa, fim: hoje })
+  const trintaDias = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
+  const noventaDias = new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0]
 
-  // Todos os pagamentos da obra (para linha temporal — sem filtro de período)
+  const [inicio, setInicio] = useState(trintaDias)
+  const [fim, setFim] = useState(hoje)
+  const [filtroAtivo, setFiltroAtivo] = useState({ inicio: trintaDias, fim: hoje })
+
   const { data: pagamentos, isLoading: loadingPag } = useQuery({
     queryKey: ['pagamentos', id],
     queryFn: () => fetchPagamentos(id),
   })
 
-  // Cálculo de produção no período filtrado (para comparativo de funcionários)
-  const { data: calculo, isLoading: loadingCalculo, refetch, isFetching } = useQuery({
-    queryKey: ['calculo-dashboard', id, filtroPeriodo.inicio, filtroPeriodo.fim],
-    queryFn: () => fetchCalculo(id, filtroPeriodo.inicio, filtroPeriodo.fim),
+  const { data: calculo, isLoading: loadingCalc, isFetching } = useQuery({
+    queryKey: ['calculo-dash', id, filtroAtivo.inicio, filtroAtivo.fim],
+    queryFn: () => fetchCalculo(id, filtroAtivo.inicio, filtroAtivo.fim),
   })
-
-  function aplicarFiltro(e: React.FormEvent) {
-    e.preventDefault()
-    setFiltroPeriodo({ ...periodo })
-  }
 
   if (loadingPag) return <LoadingSpinner />
 
-  // ── Derivações ───────────────────────────────────────────────────────────────
+  // ── Métricas ────────────────────────────────────────────────────────────────
 
   const allPag = pagamentos ?? []
-
   const totalPago = allPag.filter((p) => p.status === 'realizado').reduce((s, p) => s + p.valor_total, 0)
   const totalPendente = allPag.filter((p) => p.status === 'pendente').reduce((s, p) => s + p.valor_total, 0)
-  const totalMedicoesPeriodo = calculo?.reduce((s, c) => s + c.total_medicoes, 0) ?? 0
-  const totalFuncionarios = calculo?.length ?? 0
+  const qtdPago = allPag.filter((p) => p.status === 'realizado').length
+  const qtdPendente = allPag.filter((p) => p.status === 'pendente').length
 
   const dadosLinha = agruparPorMes(allPag)
 
-  const dadosBarras = (calculo ?? [])
-    .map((c) => ({
-      nome: c.funcionario_nome.split(' ')[0], // primeiro nome para caber no eixo
-      nomeCompleto: c.funcionario_nome,
-      produzido: c.valor_total,
-      medicoes: c.total_medicoes,
-    }))
-    .sort((a, b) => b.produzido - a.produzido)
+  const calcOrdenado = [...(calculo ?? [])].sort((a, b) => b.valor_total - a.valor_total)
+  const topFuncionario = calcOrdenado[0]
+  const totalProducao = calcOrdenado.reduce((s, c) => s + c.valor_total, 0)
+  const totalMedicoes = calcOrdenado.reduce((s, c) => s + c.total_medicoes, 0)
+  const mediaProducao = calcOrdenado.length > 0 ? totalProducao / calcOrdenado.length : 0
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // Dados para o gráfico de barras
+  const dadosBarras = calcOrdenado.slice(0, 8).map((c, i) => ({
+    nome: c.funcionario_nome.split(' ')[0],
+    nomeCompleto: c.funcionario_nome,
+    valor: c.valor_total,
+    medicoes: c.total_medicoes,
+    cor: i === 0 ? '#4f46e5' : '#94a3b8',
+  }))
+
+  const INDIGO = '#4f46e5'
+  const SLATE = '#cbd5e1'
+
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div>
+    <div className="fade-in">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm text-slate-400 mb-5">
+      <nav className="flex items-center gap-1.5 text-sm text-slate-400 mb-6">
         <Link href="/obras" className="hover:text-slate-700 transition-colors">Obras</Link>
         <ChevronRight size={14} />
         <Link href={`/obras/${id}`} className="hover:text-slate-700 transition-colors">Detalhe</Link>
@@ -143,251 +137,279 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
       </nav>
 
       {/* Header + filtro */}
-      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
-            <LayoutDashboard size={18} className="text-indigo-600" />
+          <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+            <LayoutDashboard size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Dashboard</h1>
-            <p className="text-sm text-slate-400">Produção e pagamentos da obra</p>
+            <h1 className="text-xl font-bold text-slate-900">Dashboard da obra</h1>
+            <p className="text-slate-400 text-sm">Produção, pagamentos e desempenho de equipe</p>
           </div>
         </div>
 
-        <form onSubmit={aplicarFiltro} className="flex flex-wrap items-end gap-2">
+        <form
+          onSubmit={(e) => { e.preventDefault(); setFiltroAtivo({ inicio, fim }) }}
+          className="flex flex-wrap items-end gap-2"
+        >
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Início</label>
-            <input
-              type="date"
-              value={periodo.inicio}
-              onChange={(e) => setPeriodo((p) => ({ ...p, inicio: e.target.value }))}
-              className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">De</label>
+            <input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)}
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Fim</label>
-            <input
-              type="date"
-              value={periodo.fim}
-              onChange={(e) => setPeriodo((p) => ({ ...p, fim: e.target.value }))}
-              className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Até</label>
+            <input type="date" value={fim} onChange={(e) => setFim(e.target.value)}
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
-          <button
-            type="submit"
-            disabled={isFetching}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
+          <button type="submit" disabled={isFetching}
+            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
             <Search size={14} />
             {isFetching ? 'Carregando...' : 'Aplicar'}
           </button>
         </form>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 animate-stagger">
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <Banknote size={15} className="text-green-500" />
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total pago</span>
+      {/* KPI row — totais históricos */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5 stagger-children">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 card-hover">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <Banknote size={18} className="text-emerald-600" />
+            </div>
+            <span className="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">pago</span>
           </div>
           <p className="text-2xl font-bold text-slate-900">{brl(totalPago)}</p>
-          <p className="text-xs text-slate-400 mt-1">{allPag.filter((p) => p.status === 'realizado').length} pagamento(s)</p>
+          <p className="text-xs text-slate-400 mt-1">{qtdPago} pagamento{qtdPago !== 1 ? 's' : ''} realizado{qtdPago !== 1 ? 's' : ''}</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock size={15} className="text-yellow-500" />
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Pendente</span>
+        <div className="bg-white border border-slate-200 rounded-xl p-5 card-hover">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
+              <Clock size={18} className="text-amber-500" />
+            </div>
+            <span className="text-xs text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded-full">pendente</span>
           </div>
           <p className="text-2xl font-bold text-slate-900">{brl(totalPendente)}</p>
-          <p className="text-xs text-slate-400 mt-1">{allPag.filter((p) => p.status === 'pendente').length} pagamento(s)</p>
+          <p className="text-xs text-slate-400 mt-1">{qtdPendente} aguardando pagamento</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp size={15} className="text-blue-500" />
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Medições</span>
+        <div className="bg-white border border-slate-200 rounded-xl p-5 card-hover">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+              <TrendingUp size={18} className="text-blue-600" />
+            </div>
+            <span className="text-xs text-slate-500 font-medium">período</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{loadingCalculo ? '—' : totalMedicoesPeriodo}</p>
-          <p className="text-xs text-slate-400 mt-1">no período selecionado</p>
+          <p className="text-2xl font-bold text-slate-900">{loadingCalc ? '—' : brl(totalProducao)}</p>
+          <p className="text-xs text-slate-400 mt-1">{loadingCalc ? '—' : totalMedicoes} medições no período</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <Users size={15} className="text-indigo-500" />
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Funcionários</span>
+        <div className="bg-white border border-slate-200 rounded-xl p-5 card-hover">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
+              <Users size={18} className="text-indigo-600" />
+            </div>
+            <span className="text-xs text-slate-500 font-medium">média/func.</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{loadingCalculo ? '—' : totalFuncionarios}</p>
-          <p className="text-xs text-slate-400 mt-1">com produção no período</p>
+          <p className="text-2xl font-bold text-slate-900">{loadingCalc ? '—' : brl(mediaProducao)}</p>
+          <p className="text-xs text-slate-400 mt-1">{loadingCalc ? '—' : calcOrdenado.length} funcionário{calcOrdenado.length !== 1 ? 's' : ''} com produção</p>
         </div>
       </div>
 
-      {/* Gráfico de linha — evolução de pagamentos */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 mb-5">
-        <h2 className="text-sm font-semibold text-slate-700 mb-5">Evolução de pagamentos por mês</h2>
-        {dadosLinha.length === 0 ? (
-          <p className="text-slate-400 text-sm text-center py-10">Nenhum pagamento registrado.</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={dadosLinha} margin={{ top: 4, right: 16, bottom: 4, left: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="mes" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <Tooltip content={<TooltipBRL />} />
-              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
-              <Line
-                type="monotone"
-                dataKey="pago"
-                name="Pago"
-                stroke="#22c55e"
-                strokeWidth={2.5}
-                dot={{ r: 4, fill: '#22c55e' }}
-                activeDot={{ r: 6 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="pendente"
-                name="Pendente"
-                stroke="#f59e0b"
-                strokeWidth={2.5}
-                strokeDasharray="5 3"
-                dot={{ r: 4, fill: '#f59e0b' }}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+      {/* Linha temporal + destaque top performer */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
 
-      {/* Gráfico de barras — produção por funcionário */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 mb-5">
-        <h2 className="text-sm font-semibold text-slate-700 mb-1">Produção por funcionário</h2>
-        <p className="text-xs text-slate-400 mb-5">
-          {new Date(filtroPeriodo.inicio + 'T00:00:00').toLocaleDateString('pt-BR')} —{' '}
-          {new Date(filtroPeriodo.fim + 'T00:00:00').toLocaleDateString('pt-BR')}
-        </p>
+        {/* Gráfico de linha — histórico completo */}
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="font-semibold text-slate-900">Histórico de pagamentos</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Valores realizados vs. pendentes por mês</p>
+            </div>
+          </div>
 
-        {loadingCalculo || isFetching ? (
-          <div className="flex justify-center py-10"><LoadingSpinner /></div>
-        ) : dadosBarras.length === 0 ? (
-          <p className="text-slate-400 text-sm text-center py-10">
-            Nenhuma produção registrada no período.
-          </p>
-        ) : (
-          <ResponsiveContainer width="100%" height={Math.max(220, dadosBarras.length * 52)}>
-            <BarChart
-              data={dadosBarras}
-              layout="vertical"
-              margin={{ top: 4, right: 24, bottom: 4, left: 8 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-              <XAxis
-                type="number"
-                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
-                tick={{ fontSize: 11, fill: '#94a3b8' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                type="category"
-                dataKey="nome"
-                tick={{ fontSize: 12, fill: '#475569' }}
-                axisLine={false}
-                tickLine={false}
-                width={72}
-              />
-              <Tooltip content={<TooltipBRL />} />
-              <Bar dataKey="produzido" name="Produzido (R$)" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={22} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
-      {/* Tabela comparativa */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-700">Comparativo de funcionários</h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Período:{' '}
-            {new Date(filtroPeriodo.inicio + 'T00:00:00').toLocaleDateString('pt-BR')} —{' '}
-            {new Date(filtroPeriodo.fim + 'T00:00:00').toLocaleDateString('pt-BR')}
-          </p>
+          {dadosLinha.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <AlertCircle size={28} className="text-slate-300 mb-2" />
+              <p className="text-slate-400 text-sm">Nenhum pagamento registrado ainda.</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={dadosLinha} margin={{ top: 4, right: 12, bottom: 4, left: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
+                <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={48} />
+                <Tooltip content={<CustomTooltip />} />
+                <Line type="monotone" dataKey="pago" name="Pago" stroke="#10b981" strokeWidth={2.5}
+                  dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="pendente" name="Pendente" stroke="#f59e0b" strokeWidth={2}
+                  strokeDasharray="5 3" dot={{ r: 3, fill: '#f59e0b' }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
-        {loadingCalculo || isFetching ? (
-          <div className="flex justify-center py-10"><LoadingSpinner /></div>
-        ) : !calculo?.length ? (
-          <p className="text-slate-400 text-sm text-center py-10">
-            Nenhuma produção no período.
+        {/* Top performer */}
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col">
+          <div className="flex items-center gap-2 mb-4">
+            <Award size={16} className="text-indigo-500" />
+            <h2 className="font-semibold text-slate-900 text-sm">Maior produtor</h2>
+            <span className="text-xs text-slate-400 ml-auto">no período</span>
+          </div>
+
+          {loadingCalc || isFetching ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="skeleton w-full h-32 rounded-xl" />
+            </div>
+          ) : !topFuncionario ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
+              <Users size={28} className="text-slate-200 mb-2" />
+              <p className="text-slate-400 text-sm">Sem produção no período.</p>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200 shrink-0">
+                  <span className="text-white font-bold text-lg">
+                    {topFuncionario.funcionario_nome.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900">{topFuncionario.funcionario_nome}</p>
+                  <p className="text-xs text-slate-400">{topFuncionario.total_medicoes} medições</p>
+                </div>
+              </div>
+
+              <div className="bg-indigo-50 rounded-xl p-4 mb-3">
+                <p className="text-xs text-indigo-500 font-semibold uppercase tracking-wide mb-1">Produção total</p>
+                <p className="text-2xl font-bold text-indigo-700">{brl(topFuncionario.valor_total)}</p>
+              </div>
+
+              <div className="space-y-2 mt-auto">
+                {topFuncionario.por_servico.slice(0, 3).map((s) => (
+                  <div key={s.servico_id} className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500 truncate">{s.servico_nome}</span>
+                    <span className="font-semibold text-slate-700 ml-2 shrink-0">{brl(s.valor_total)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Gráfico de barras + tabela comparativa */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+
+        {/* Barras horizontais */}
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6">
+          <h2 className="font-semibold text-slate-900 mb-1">Produção por funcionário</h2>
+          <p className="text-xs text-slate-400 mb-5">
+            {new Date(filtroAtivo.inicio + 'T00:00:00').toLocaleDateString('pt-BR')} — {new Date(filtroAtivo.fim + 'T00:00:00').toLocaleDateString('pt-BR')}
           </p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="text-left px-6 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">#</th>
-                <th className="text-left px-6 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Funcionário</th>
-                <th className="text-right px-6 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Medições</th>
-                <th className="text-right px-6 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Valor produzido</th>
-                <th className="text-right px-6 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">% do total</th>
-                <th className="text-center px-6 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Serviços</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {[...calculo]
-                .sort((a, b) => b.valor_total - a.valor_total)
-                .map((c, i) => {
-                  const totalGeral = calculo.reduce((s, x) => s + x.valor_total, 0)
-                  const pct = totalGeral > 0 ? ((c.valor_total / totalGeral) * 100).toFixed(1) : '0.0'
+
+          {loadingCalc || isFetching ? (
+            <div className="space-y-2">
+              {[1,2,3].map(i => <div key={i} className="skeleton h-7 rounded" />)}
+            </div>
+          ) : dadosBarras.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <TrendingUp size={24} className="text-slate-200 mb-2" />
+              <p className="text-slate-400 text-sm">Sem dados no período.</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={Math.max(180, dadosBarras.length * 44)}>
+              <BarChart data={dadosBarras} layout="vertical" margin={{ top: 0, right: 16, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" horizontal={false} />
+                <XAxis type="number" tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`}
+                  tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="nome" tick={{ fontSize: 12, fill: '#475569' }}
+                  axisLine={false} tickLine={false} width={64} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="valor" name="Produzido" radius={[0, 6, 6, 0]} barSize={20}>
+                  {dadosBarras.map((d, i) => (
+                    <Cell key={i} fill={i === 0 ? INDIGO : SLATE} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Tabela comparativa */}
+        <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <h2 className="font-semibold text-slate-900">Ranking de equipe</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Ordenado por produção no período</p>
+          </div>
+
+          {loadingCalc || isFetching ? (
+            <div className="p-6 space-y-3">
+              {[1,2,3].map(i => <div key={i} className="skeleton h-10 rounded-lg" />)}
+            </div>
+          ) : calcOrdenado.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Users size={24} className="text-slate-200 mb-2" />
+              <p className="text-slate-400 text-sm">Sem produção no período selecionado.</p>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50/60 border-b border-slate-100">
+                  <th className="text-left px-6 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wide">#</th>
+                  <th className="text-left px-6 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wide">Funcionário</th>
+                  <th className="text-right px-6 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wide hidden sm:table-cell">Medições</th>
+                  <th className="text-right px-6 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wide">Produção</th>
+                  <th className="px-6 py-3 w-24 hidden md:table-cell" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {calcOrdenado.map((c, i) => {
+                  const pct = totalProducao > 0 ? (c.valor_total / totalProducao) * 100 : 0
                   return (
-                    <tr key={c.funcionario_id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 text-slate-400 font-medium text-xs">{i + 1}º</td>
+                    <tr key={c.funcionario_id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="px-6 py-4">
+                        {i === 0
+                          ? <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">1</span>
+                          : <span className="text-slate-400 text-xs font-medium">{i + 1}º</span>}
+                      </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
-                            <span className="text-indigo-600 font-semibold text-xs">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${i === 0 ? 'bg-indigo-100' : 'bg-slate-100'}`}>
+                            <span className={`text-xs font-semibold ${i === 0 ? 'text-indigo-600' : 'text-slate-500'}`}>
                               {c.funcionario_nome.charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <span className="font-medium text-slate-900">{c.funcionario_nome}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right text-slate-600">{c.total_medicoes}</td>
+                      <td className="px-6 py-4 text-right text-slate-500 hidden sm:table-cell">{c.total_medicoes}</td>
                       <td className="px-6 py-4 text-right font-bold text-slate-900">{brl(c.valor_total)}</td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                            <div
-                              className="h-full bg-indigo-500 rounded-full"
-                              style={{ width: `${pct}%` }}
-                            />
+                      <td className="px-6 py-4 hidden md:table-cell">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-slate-100 rounded-full h-1.5">
+                            <div className={`h-full rounded-full ${i === 0 ? 'bg-indigo-500' : 'bg-slate-300'}`}
+                              style={{ width: `${pct}%` }} />
                           </div>
-                          <span className="text-xs text-slate-500 w-10 text-right">{pct}%</span>
+                          <span className="text-xs text-slate-400 w-8 text-right">{pct.toFixed(0)}%</span>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 text-center text-slate-500 text-xs">
-                        {c.por_servico.length} tipo{c.por_servico.length !== 1 ? 's' : ''}
                       </td>
                     </tr>
                   )
                 })}
-            </tbody>
-            <tfoot>
-              <tr className="bg-slate-50 border-t border-slate-200">
-                <td colSpan={2} className="px-6 py-3.5 text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                  Total
-                </td>
-                <td className="px-6 py-3.5 text-right text-xs font-semibold text-slate-700">
-                  {calculo.reduce((s, c) => s + c.total_medicoes, 0)}
-                </td>
-                <td className="px-6 py-3.5 text-right text-sm font-bold text-slate-900">
-                  {brl(calculo.reduce((s, c) => s + c.valor_total, 0))}
-                </td>
-                <td colSpan={2} />
-              </tr>
-            </tfoot>
-          </table>
-        )}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-slate-100 bg-slate-50/60">
+                  <td colSpan={2} className="px-6 py-3 text-xs font-semibold text-slate-500">Total</td>
+                  <td className="px-6 py-3 text-right text-xs font-semibold text-slate-700 hidden sm:table-cell">{totalMedicoes}</td>
+                  <td className="px-6 py-3 text-right font-bold text-slate-900">{brl(totalProducao)}</td>
+                  <td className="hidden md:table-cell" />
+                </tr>
+              </tfoot>
+            </table>
+          )}
+        </div>
       </div>
     </div>
   )
