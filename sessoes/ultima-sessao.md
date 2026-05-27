@@ -1,48 +1,54 @@
 # Última Sessão
 
 ## Data
-2026-05-26
+2026-05-27
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 8 — Design e UX do Dashboard Web
+Fase 1 — Sprint 10 — Dashboard interativo por obra
 
 ## O que foi feito
 
-### Redesign visual completo do dashboard web
-- Instalado `lucide-react` para ícones em todo o sistema
-- `Sidebar.tsx` — ícones por item de nav, logo com ícone HardHat, avatar do usuário, indicador ativo azul, botão Sair com ícone
-- `obras/page.tsx` — cards com ícone Building2, hover com borda azul, seta "Ver obra" animada, empty state com ícone, contagem de obras
-- `obras/[id]/page.tsx` — cards de seção com ícones + cor por seção (Serviços=violeta, Medições=azul, Pagamentos=verde), metadados com ícones (User, MapPin, Calendar), breadcrumb com ChevronRight
-- `obras/[id]/medicoes/page.tsx` — header com ícone e contagem, tabela com header uppercase, empty state, breadcrumb melhorado
-- `obras/[id]/pagamentos/page.tsx` — botão "Calcular pagamentos" com ícone + cor verde, botão "Realizar" com ícone CheckCircle, empty state orientando o usuário
-- `obras/[id]/servicos/page.tsx` — botão "Novo serviço" violeta com ícone Plus, formulário com X para fechar, labels uppercase, unidade com badge, empty state
+### obras/[id]/dashboard/page.tsx — criado do zero
+- Filtro de período (início/fim) com botão "Aplicar" — controla gráficos e tabela
+- 4 KPI cards: total pago, pendente, medições no período, funcionários com produção
+- Gráfico de linha (Recharts): evolução de pagamentos por mês — verde=pago, amarelo=pendente
+- Gráfico de barras horizontal (Recharts): produção por funcionário, ordenado do maior para menor
+- Tabela comparativa: ranking de funcionários com medições, valor produzido, barra de % proporcional, qtd de serviços
+- Tooltip customizado formatado em BRL
 
-## Arquivos alterados
-- `apps/web/src/components/Sidebar.tsx`
-- `apps/web/src/app/(dashboard)/obras/page.tsx`
-- `apps/web/src/app/(dashboard)/obras/[id]/page.tsx`
-- `apps/web/src/app/(dashboard)/obras/[id]/medicoes/page.tsx`
-- `apps/web/src/app/(dashboard)/obras/[id]/pagamentos/page.tsx`
-- `apps/web/src/app/(dashboard)/obras/[id]/servicos/page.tsx`
-- `apps/web/package.json` ← lucide-react adicionado
+### obras/[id]/page.tsx — atualizado
+- Card "Dashboard" adicionado (indigo) como primeiro card de navegação
+- Grid de 3 para 4 colunas (sm:grid-cols-2 lg:grid-cols-4)
+
+### Tipos auxiliares criados
+- `apps/web/src/types/calculo.ts` — CalculoPagamento (espelha o tipo da API)
+
+### Dependência instalada
+- `recharts` via npm
+
+## Arquivos alterados/criados
+- `apps/web/src/app/(dashboard)/obras/[id]/dashboard/page.tsx` ← novo
+- `apps/web/src/app/(dashboard)/obras/[id]/page.tsx` ← card Dashboard + grid 4 cols
+- `apps/web/src/types/calculo.ts` ← novo
+- `apps/web/package.json` ← recharts adicionado
 
 ## Decisões tomadas
-- Cores por seção: violeta=Serviços, azul=Medições, verde=Pagamentos — consistência visual em toda a navegação
-- Empty states com ícone + texto orientativo — elimina páginas em branco sem contexto
-- Breadcrumb com ChevronRight em vez de `/` — mais moderno e hierárquico
-- Tabelas com header uppercase tracking-wide — padrão de dashboard profissional
+- Dashboard é per-obra (não global) — os dados de medição e pagamento vivem no contexto da obra
+- Linha temporal usa todos os pagamentos (sem filtro de período) para mostrar histórico completo
+- Barras e tabela usam o endpoint `/calcular?inicio=&fim=` que já existe — sem novo endpoint
+- Tooltip BRL customizado — mais legível que o padrão do Recharts
 
 ## Onde parou
-Redesign completo. TypeScript compilando sem erros. Web rodando em localhost:3001.
+TypeScript compilando sem erros. Web rodando em localhost:3001.
 
 ## Próxima ação (EXATA)
-1. Testar visualmente no navegador todas as páginas redesenhadas
-2. Se aprovado: commit + push
-3. Próximo sprint: funcionários — listagem + detalhe
+1. Testar no browser: `/obras/:id` → clicar Dashboard → testar filtro de período
+2. Se ok: commit + push
+3. Próximo: avaliar o que falta para fechar o MVP da Fase 1
 
 ## Commit sugerido
 ```
 git add -A
-git commit -m "feat(web): redesign visual do dashboard — ícones, empty states, UX melhorado"
+git commit -m "feat(web): dashboard interativo por obra — gráficos de produção e comparativo de funcionários"
 git push origin main
 ```

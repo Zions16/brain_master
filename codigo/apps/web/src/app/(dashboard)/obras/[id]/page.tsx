@@ -1,7 +1,7 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { Ruler, Banknote, Wrench, ChevronRight, MapPin, User, Calendar } from 'lucide-react'
+import { Ruler, Banknote, Wrench, ChevronRight, MapPin, User, Calendar, LayoutDashboard } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import type { Obra, StatusObra } from '@brain-master/shared/tipos'
@@ -24,6 +24,14 @@ async function fetchObra(id: string): Promise<Obra> {
 }
 
 const SECTIONS = [
+  {
+    href: (id: string) => `/obras/${id}/dashboard`,
+    label: 'Dashboard',
+    description: 'Produção, gastos e comparativo de funcionários',
+    icon: LayoutDashboard,
+    color: 'bg-indigo-50 text-indigo-600',
+    border: 'hover:border-indigo-300',
+  },
   {
     href: (id: string) => `/obras/${id}/servicos`,
     label: 'Serviços',
@@ -128,7 +136,7 @@ export default function ObraDetailPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {SECTIONS.map(({ href, label, description, icon: Icon, color, border }) => (
           <Link
             key={label}
