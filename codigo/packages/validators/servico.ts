@@ -9,6 +9,9 @@ export const criarServicoSchema = z.object({
     required_error: 'Unidade de medida é obrigatória',
     message: 'Unidade inválida. Use: M2, ML, M3, UN, KG, HORA ou PECA',
   }),
+  tipo_cobranca: z.enum(['empreitada', 'diaria'], {
+    message: "Tipo inválido. Use 'empreitada' ou 'diaria'",
+  }).default('empreitada'),
   valor_pagamento: z
     .number({ required_error: 'Valor de pagamento é obrigatório' })
     .positive({ message: 'Valor de pagamento deve ser maior que zero' }),

@@ -5,9 +5,15 @@ import { useState } from 'react'
 import { ChevronRight, Wrench, Plus, X, TrendingUp, TrendingDown } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
-import type { Servico } from '@brain-master/shared/tipos'
+import { useAuthStore } from '@/store/auth'
+import type { Servico, TipoCobranca } from '@brain-master/shared/tipos'
 
 const UNIDADES = ['M2', 'ML', 'M3', 'UN', 'KG', 'HORA', 'PECA'] as const
+
+const TIPO_COBRANCA_LABEL: Record<TipoCobranca, string> = {
+  empreitada: 'Empreitada',
+  diaria: 'Diária',
+}
 
 function brl(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -20,17 +26,19 @@ async function fetchServicos(obraId: string): Promise<Servico[]> {
 
 async function criarServico(
   obraId: string,
-  payload: { nome: string; unidade_medida: string; valor_pagamento: number; valor_cobranca?: number },
+  payload: { nome: string; unidade_medida: string; tipo_cobranca: TipoCobranca; valor_pagamento: number; valor_cobranca?: number },
 ): Promise<Servico> {
   const { data } = await api.post(`/api/v1/obras/${obraId}/servicos`, payload)
   return data
 }
 
-const EMPTY_FORM = { nome: '', unidade_medida: 'M2', valor_pagamento: '', valor_cobranca: '' }
+const EMPTY_FORM = { nome: '', unidade_medida: 'M2', tipo_cobranca: 'empreitada' as TipoCobranca, valor_pagamento: '', valor_cobranca: '' }
 
 export default function ServicosPage({ params }: { params: { id: string } }) {
   const { id } = params
   const qc = useQueryClient()
+  const perfil = useAuthStore((s) => s.usuario?.perfil)
+  const verFinanceiro = perfil === 'GESTOR' || perfil === 'FINANCEIRO'
 
   const { data: servicos, isLoading, isError } = useQuery({
     queryKey: ['servicos', id],
@@ -43,9 +51,10 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
 
   const { mutate: criar, isPending } = useMutation({
     mutationFn: () => {
-      const payload: { nome: string; unidade_medida: string; valor_pagamento: number; valor_cobranca?: number } = {
+      const payload: { nome: string; unidade_medida: string; tipo_cobranca: TipoCobranca; valor_pagamento: number; valor_cobranca?: number } = {
         nome: form.nome.trim(),
         unidade_medida: form.unidade_medida,
+        tipo_cobranca: form.tipo_cobranca,
         valor_pagamento: Number(form.valor_pagamento),
       }
       if (form.valor_cobranca !== '') {
@@ -129,9 +138,9 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
           </div>
 
           <form onSubmit={handleSubmit}>
-            {/* Linha 1: Nome + Unidade */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div>
+            {/* Linha 1: Nome + Unidade + Tipo */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <div className="sm:col-span-1">
                 <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Nome</label>
                 <input
                   type="text"
@@ -151,6 +160,17 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
                   {UNIDADES.map((u) => (
                     <option key={u} value={u}>{u}</option>
                   ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Tipo de cobrança</label>
+                <select
+                  value={form.tipo_cobranca}
+                  onChange={(e) => setForm((f) => ({ ...f, tipo_cobranca: e.target.value as TipoCobranca }))}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white"
+                >
+                  <option value="empreitada">Empreitada (por produção)</option>
+                  <option value="diaria">Diária (por dia)</option>
                 </select>
               </div>
             </div>
@@ -258,6 +278,7 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Serviço</th>
+                <th className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide hidden sm:table-cell">Tipo</th>
                 <th className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Unidade</th>
                 <th className="text-right px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">
                   <span className="flex items-center justify-end gap-1.5">
@@ -265,13 +286,17 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
                     Pago ao func.
                   </span>
                 </th>
-                <th className="text-right px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide hidden sm:table-cell">
-                  <span className="flex items-center justify-end gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
-                    Cobrado do cliente
-                  </span>
-                </th>
-                <th className="text-right px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide hidden md:table-cell">Margem/unid.</th>
+                {verFinanceiro && (
+                  <th className="text-right px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide hidden sm:table-cell">
+                    <span className="flex items-center justify-end gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                      Cobrado do cliente
+                    </span>
+                  </th>
+                )}
+                {verFinanceiro && (
+                  <th className="text-right px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide hidden md:table-cell">Margem/unid.</th>
+                )}
                 <th className="text-center px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Status</th>
               </tr>
             </thead>
@@ -289,6 +314,15 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
                 return (
                   <tr key={s.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-4 font-medium text-slate-900">{s.nome}</td>
+                    <td className="px-5 py-4 hidden sm:table-cell">
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        s.tipo_cobranca === 'diaria'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-violet-100 text-violet-700'
+                      }`}>
+                        {TIPO_COBRANCA_LABEL[s.tipo_cobranca]}
+                      </span>
+                    </td>
                     <td className="px-5 py-4">
                       <span className="bg-slate-100 text-slate-600 text-xs font-medium px-2 py-1 rounded">
                         {s.unidade_medida}
@@ -297,13 +331,15 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
                     <td className="px-5 py-4 text-right font-semibold text-slate-700">
                       {brl(s.valor_pagamento)}
                     </td>
-                    <td className="px-5 py-4 text-right font-semibold text-blue-700 hidden sm:table-cell">
-                      {s.valor_cobranca != null
-                        ? brl(s.valor_cobranca)
-                        : <span className="text-slate-300 font-normal">—</span>
-                      }
-                    </td>
-                    <td className="px-5 py-4 text-right hidden md:table-cell">
+                    {verFinanceiro && (
+                      <td className="px-5 py-4 text-right font-semibold text-blue-700 hidden sm:table-cell">
+                        {s.valor_cobranca != null
+                          ? brl(s.valor_cobranca)
+                          : <span className="text-slate-300 font-normal">—</span>
+                        }
+                      </td>
+                    )}
+                    {verFinanceiro && <td className="px-5 py-4 text-right hidden md:table-cell">
                       {margem !== null ? (
                         <div className="flex items-center justify-end gap-1.5">
                           {margem >= 0
@@ -322,7 +358,7 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
                       ) : (
                         <span className="text-slate-300">—</span>
                       )}
-                    </td>
+                    </td>}
                     <td className="px-5 py-4 text-center">
                       <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full ${
                         s.ativo ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
@@ -339,7 +375,7 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
             {servicos.some((s) => s.valor_cobranca != null) && (
               <tfoot>
                 <tr className="border-t border-slate-200 bg-slate-50/80">
-                  <td colSpan={2} className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <td colSpan={3} className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
                     Média entre serviços ativos
                   </td>
                   <td className="px-5 py-3 text-right text-xs font-bold text-slate-700">

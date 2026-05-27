@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify'
-import { handleLogin, handleRefresh, handleLogout } from './auth.controller'
+import { handleLogin, handleRefresh, handleLogout, handleTokenLogin } from './auth.controller'
 import { autenticar } from '../../middlewares/autenticar'
 
 export async function authRoutes(app: FastifyInstance) {
@@ -18,6 +18,7 @@ export async function authRoutes(app: FastifyInstance) {
     handler: handleLogin,
   })
 
+  app.post('/token-login', { handler: handleTokenLogin })
   app.post('/refresh', { handler: handleRefresh })
 
   app.post('/logout', {

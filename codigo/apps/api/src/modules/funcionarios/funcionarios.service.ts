@@ -1,6 +1,6 @@
 import { supabase } from '../../lib/supabase'
 import { CriarFuncionarioInput, EditarFuncionarioInput } from '@brain-master/validators'
-import { Funcionario } from '@brain-master/shared/tipos'
+import { Funcionario, Medicao } from '@brain-master/shared/tipos'
 
 export interface ProducaoResult {
   funcionario_id: string
@@ -42,9 +42,14 @@ export async function buscarFuncionario(id: string, empresaId: string): Promise<
 }
 
 export async function criarFuncionario(input: CriarFuncionarioInput, empresaId: string): Promise<Funcionario> {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let suffix = ''
+  for (let i = 0; i < 5; i++) suffix += chars[Math.floor(Math.random() * chars.length)]
+  const token_acesso = `FUN-${suffix}`
+
   const { data, error } = await supabase
     .from('funcionario')
-    .insert({ ...input, empresa_id: empresaId, ativo: true })
+    .insert({ ...input, empresa_id: empresaId, ativo: true, token_acesso })
     .select()
     .single()
 
@@ -65,6 +70,44 @@ export async function editarFuncionario(id: string, input: EditarFuncionarioInpu
 
   if (error || !data) throw { statusCode: 500, message: 'Erro ao editar funcionário' }
   return data as Funcionario
+}
+
+export async function buscarMeuPerfil(
+  usuarioNome: string,
+  empresaId: string,
+): Promise<Funcionario | null> {
+  const { data, error } = await supabase
+    .from('funcionario')
+    .select('*')
+    .eq('empresa_id', empresaId)
+    .ilike('nome', usuarioNome.trim())
+    .eq('ativo', true)
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw { statusCode: 500, message: 'Erro ao buscar perfil de funcionário' }
+  return data as Funcionario | null
+}
+
+export async function listarMedicoesDoFuncionario(
+  funcionarioId: string,
+  empresaId: string,
+): Promise<Medicao[]> {
+  await buscarFuncionario(funcionarioId, empresaId)
+
+  const { data, error } = await supabase
+    .from('medicao')
+    .select(`
+      *,
+      obra:obra_id(id, nome),
+      servico:servico_id(id, nome, unidade_medida, tipo_cobranca)
+    `)
+    .eq('funcionario_id', funcionarioId)
+    .order('data', { ascending: false })
+    .limit(60)
+
+  if (error) throw { statusCode: 500, message: 'Erro ao listar medições do funcionário' }
+  return data as unknown as Medicao[]
 }
 
 export async function calcularProducao(

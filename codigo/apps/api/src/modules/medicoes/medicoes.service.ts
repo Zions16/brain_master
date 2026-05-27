@@ -125,7 +125,7 @@ export async function registrarMedicao(
       valor_cobranca_calculado,
       data: input.data ?? new Date().toISOString().split('T')[0],
       medido_por: usuarioId,
-      status: 'ativa',
+      status: input.emergencia ? 'pendente_aprovacao' : 'ativa',
       observacao: input.observacao ?? null,
     })
     .select()

@@ -10,8 +10,9 @@ export const criarMedicaoSchema = z.object({
     .number({ required_error: 'Quantidade é obrigatória' })
     .positive({ message: 'Quantidade deve ser maior que zero' })
     .max(99999, { message: 'Quantidade muito alta — verifique o valor' }),
-  data: z.string().datetime().optional(),
+  data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Data inválida — use YYYY-MM-DD' }).optional(),
   observacao: z.string().max(500).optional(),
+  emergencia: z.boolean().optional().default(false),
 })
 
 export const corrigirMedicaoSchema = z.object({

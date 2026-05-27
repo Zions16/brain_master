@@ -18,6 +18,8 @@ export type StatusMedicao = 'pendente' | 'ativa' | 'corrigida' | 'cancelada' | '
 
 export type StatusPagamento = 'pendente' | 'realizado'
 
+export type TipoCobranca = 'empreitada' | 'diaria'
+
 // ─────────────────────────────────────────────
 // ENTIDADES — campo por campo alinhado com o Supabase
 // ─────────────────────────────────────────────
@@ -56,6 +58,8 @@ export interface Obra {
   data_inicio?: string
   data_prev_fim?: string
   status: StatusObra
+  valor_contrato?: number
+  lucro_esperado?: number
   created_at: string
 }
 
@@ -72,6 +76,7 @@ export interface Funcionario {
   funcao?: string
   tipo_pagamento: TipoPagamento
   valor_base?: number
+  token_acesso?: string
   ativo: boolean
   created_at: string
 }
@@ -81,6 +86,7 @@ export interface Servico {
   obra_id: string
   nome: string
   unidade_medida: UnidadeMedida
+  tipo_cobranca: TipoCobranca
   valor_pagamento: number
   valor_cobranca?: number
   ativo: boolean

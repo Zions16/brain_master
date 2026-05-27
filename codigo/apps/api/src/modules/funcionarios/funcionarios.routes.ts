@@ -7,6 +7,8 @@ import {
   handleCriarFuncionario,
   handleEditarFuncionario,
   handleCalcularProducao,
+  handleListarMedicoesDoFuncionario,
+  handleBuscarMeuPerfil,
 } from './funcionarios.controller'
 
 export async function funcionariosRoutes(app: FastifyInstance) {
@@ -14,8 +16,11 @@ export async function funcionariosRoutes(app: FastifyInstance) {
 
   app.get('/', { preHandler: [autorizar('GESTOR', 'ENGENHEIRO')], handler: handleListarFuncionarios })
   app.post('/', { preHandler: [autorizar('GESTOR')], handler: handleCriarFuncionario })
-  // rota estática /:id/producao registrada antes de /:id para evitar conflito de params
-  app.get('/:id/producao', { preHandler: [autorizar('GESTOR', 'ENGENHEIRO')], handler: handleCalcularProducao })
+  // rota estática /me antes de /:id para evitar conflito de params
+  app.get('/me', { preHandler: [autorizar('FUNCIONARIO', 'ENGENHEIRO', 'GESTOR')], handler: handleBuscarMeuPerfil })
+  // rotas estáticas /:id/* registradas antes de /:id
+  app.get('/:id/producao', { preHandler: [autorizar('GESTOR', 'ENGENHEIRO', 'FUNCIONARIO')], handler: handleCalcularProducao })
+  app.get('/:id/medicoes', { preHandler: [autorizar('GESTOR', 'ENGENHEIRO', 'FUNCIONARIO')], handler: handleListarMedicoesDoFuncionario })
   app.get('/:id', { preHandler: [autorizar('GESTOR', 'ENGENHEIRO')], handler: handleBuscarFuncionario })
   app.patch('/:id', { preHandler: [autorizar('GESTOR')], handler: handleEditarFuncionario })
 }

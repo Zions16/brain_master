@@ -2,9 +2,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useState } from 'react'
-import { Users, Plus, X, ChevronRight } from 'lucide-react'
+import { Users, Plus, X, ChevronRight, Copy, Check } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
+import { useAuthStore } from '@/store/auth'
 import type { Funcionario, Obra, TipoPagamento } from '@brain-master/shared/tipos'
 
 const TIPO_LABEL: Record<TipoPagamento, string> = {
@@ -45,8 +46,30 @@ async function criarFuncionario(payload: {
   return data
 }
 
+function TokenCopiavel({ token }: { token?: string }) {
+  const [copiado, setCopiado] = useState(false)
+  if (!token) return <span className="text-slate-300 text-xs">—</span>
+
+  function copiar() {
+    navigator.clipboard.writeText(token!)
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 1500)
+  }
+
+  return (
+    <button
+      onClick={copiar}
+      className="inline-flex items-center gap-1.5 font-mono text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md transition-colors"
+    >
+      {token}
+      {copiado ? <Check size={11} className="text-emerald-600" /> : <Copy size={11} className="text-slate-400" />}
+    </button>
+  )
+}
+
 export default function FuncionariosPage() {
   const qc = useQueryClient()
+  const perfil = useAuthStore((s) => s.usuario?.perfil)
   const [formAberto, setFormAberto] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [erroForm, setErroForm] = useState('')
@@ -262,6 +285,9 @@ export default function FuncionariosPage() {
                 <th className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Nome</th>
                 <th className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Função</th>
                 <th className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Tipo de pagamento</th>
+                {perfil === 'GESTOR' && (
+                  <th className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Token</th>
+                )}
                 <th className="text-center px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Status</th>
                 <th className="px-5 py-3.5" />
               </tr>
@@ -272,6 +298,9 @@ export default function FuncionariosPage() {
                   <td className="px-5 py-4 font-medium text-slate-900">{f.nome}</td>
                   <td className="px-5 py-4 text-slate-500">{f.funcao ?? '—'}</td>
                   <td className="px-5 py-4 text-slate-600">{TIPO_LABEL[f.tipo_pagamento]}</td>
+                  {perfil === 'GESTOR' && (
+                    <td className="px-5 py-4"><TokenCopiavel token={f.token_acesso} /></td>
+                  )}
                   <td className="px-5 py-4 text-center">
                     <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full ${
                       f.ativo ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'

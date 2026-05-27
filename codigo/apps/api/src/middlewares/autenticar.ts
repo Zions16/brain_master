@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
+import '@fastify/jwt'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { UsuarioSession } from '@brain-master/shared/tipos'
@@ -30,7 +31,20 @@ export async function autenticar(request: FastifyRequest, reply: FastifyReply) {
   const { data: authData, error: authError } = await authVerifyClient.auth.getUser(token)
 
   if (authError || !authData.user) {
-    return reply.status(401).send({ statusCode: 401, error: 'Unauthorized', message: 'Token inválido ou expirado' })
+    // Fallback: tentar JWT próprio (login de funcionário por token)
+    try {
+      const jwt = (request.server as any).jwt
+      const payload = jwt.verify(token) as { sub: string; empresa_id: string; nome: string; perfil: string }
+      request.usuario = {
+        id: payload.sub,
+        empresa_id: payload.empresa_id,
+        nome: payload.nome,
+        perfil: payload.perfil as UsuarioSession['perfil'],
+      }
+      return
+    } catch {
+      return reply.status(401).send({ statusCode: 401, error: 'Unauthorized', message: 'Token inválido ou expirado' })
+    }
   }
 
   const { data: usuario, error: usuarioError } = await supabase

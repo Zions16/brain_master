@@ -8,14 +8,20 @@ import {
 } from 'recharts'
 import {
   ChevronRight, LayoutDashboard, Banknote, Clock,
-  Users, TrendingUp, TrendingDown, Award, Search, AlertCircle, DollarSign,
+  Users, TrendingUp, TrendingDown, Award, Search, AlertCircle, Target,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
-import type { Pagamento } from '@brain-master/shared/tipos'
+import { useAuthStore } from '@/store/auth'
+import type { Obra, Pagamento } from '@brain-master/shared/tipos'
 import type { CalculoPagamento } from '@/types/calculo'
 
 // ─── Fetch ────────────────────────────────────────────────────────────────────
+
+async function fetchObra(obraId: string): Promise<Obra> {
+  const { data } = await api.get(`/api/v1/obras/${obraId}`)
+  return data
+}
 
 async function fetchPagamentos(obraId: string): Promise<Pagamento[]> {
   const { data } = await api.get(`/api/v1/obras/${obraId}/pagamentos`)
@@ -74,6 +80,8 @@ function CustomTooltip({ active, payload, label }: any) {
 
 export default function DashboardPage({ params }: { params: { id: string } }) {
   const { id } = params
+  const perfil = useAuthStore((s) => s.usuario?.perfil)
+  const verFinanceiro = perfil === 'GESTOR' || perfil === 'FINANCEIRO'
 
   const hoje = new Date().toISOString().split('T')[0]
   const trintaDias = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
@@ -82,6 +90,12 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
   const [inicio, setInicio] = useState(trintaDias)
   const [fim, setFim] = useState(hoje)
   const [filtroAtivo, setFiltroAtivo] = useState({ inicio: trintaDias, fim: hoje })
+
+  const { data: obra } = useQuery({
+    queryKey: ['obra', id],
+    queryFn: () => fetchObra(id),
+    enabled: verFinanceiro,
+  })
 
   const { data: pagamentos, isLoading: loadingPag } = useQuery({
     queryKey: ['pagamentos', id],
@@ -104,6 +118,16 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
   const qtdPendente = allPag.filter((p) => p.status === 'pendente').length
 
   const dadosLinha = agruparPorMes(allPag)
+
+  const orcamento = verFinanceiro && obra?.valor_contrato != null ? (() => {
+    const contrato = obra.valor_contrato as number
+    const lucroEsperado = obra.lucro_esperado ?? 0
+    const orcamentoCustos = Math.max(0, contrato - lucroEsperado)
+    const gastoTotal = totalPago + totalPendente
+    const saldo = orcamentoCustos - gastoTotal
+    const pct = orcamentoCustos > 0 ? Math.min(100, (gastoTotal / orcamentoCustos) * 100) : 0
+    return { contrato, lucroEsperado, orcamentoCustos, gastoTotal, saldo, pct, alerta: pct >= 80 }
+  })() : null
 
   const calcOrdenado = [...(calculo ?? [])].sort((a, b) => b.valor_total - a.valor_total)
   const topFuncionario = calcOrdenado[0]
@@ -174,6 +198,66 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
         </form>
       </div>
 
+      {/* Painel de orçamento — visível apenas para GESTOR/FINANCEIRO quando valor_contrato definido */}
+      {orcamento && (
+        <div className={`rounded-xl p-5 mb-5 border ${orcamento.alerta ? 'bg-amber-50 border-amber-300' : 'bg-white border-slate-200'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Target size={16} className={orcamento.alerta ? 'text-amber-600' : 'text-indigo-600'} />
+              <h2 className="font-semibold text-slate-900">Orçamento da obra</h2>
+            </div>
+            {orcamento.alerta && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-300 px-2.5 py-1 rounded-full">
+                <AlertCircle size={11} />
+                {orcamento.pct >= 100 ? 'Orçamento esgotado' : `${orcamento.pct.toFixed(0)}% do orçamento utilizado`}
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+            <div>
+              <p className="text-xs text-slate-400 mb-1">Valor do contrato</p>
+              <p className="text-lg font-bold text-slate-900">{brl(orcamento.contrato)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 mb-1">Orçamento para custos</p>
+              <p className="text-lg font-bold text-indigo-700">{brl(orcamento.orcamentoCustos)}</p>
+              {orcamento.lucroEsperado > 0 && (
+                <p className="text-xs text-slate-400 mt-0.5">lucro esperado: {brl(orcamento.lucroEsperado)}</p>
+              )}
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 mb-1">Gasto acumulado</p>
+              <p className={`text-lg font-bold ${orcamento.alerta ? 'text-amber-700' : 'text-slate-900'}`}>
+                {brl(orcamento.gastoTotal)}
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">{orcamento.pct.toFixed(1)}% do orçamento</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 mb-1">Saldo restante</p>
+              <p className={`text-lg font-bold ${orcamento.saldo >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                {brl(orcamento.saldo)}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-xs text-slate-400">
+              <span>{brl(orcamento.gastoTotal)} gasto</span>
+              <span>{brl(orcamento.orcamentoCustos)} disponível</span>
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  orcamento.pct >= 100 ? 'bg-red-500' : orcamento.alerta ? 'bg-amber-500' : 'bg-indigo-500'
+                }`}
+                style={{ width: `${orcamento.pct}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* KPI row — totais históricos */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5 stagger-children">
         <div className="bg-white border border-slate-200 rounded-xl p-5 card-hover">
@@ -221,8 +305,8 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      {/* Lucratividade no período */}
-      {calcOrdenado.length > 0 && (
+      {/* Lucratividade no período — visível apenas para GESTOR/FINANCEIRO */}
+      {verFinanceiro && calcOrdenado.length > 0 && (
         <div className="bg-white border border-slate-200 rounded-xl p-5 mb-5">
           <div className="flex items-center justify-between mb-4">
             <div>

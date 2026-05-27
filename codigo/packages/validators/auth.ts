@@ -13,3 +13,11 @@ export const loginSchema = z.object({
 })
 
 export type LoginInput = z.infer<typeof loginSchema>
+
+export const tokenLoginSchema = z.object({
+  token: z
+    .string({ required_error: 'Token é obrigatório' })
+    .regex(/^FUN-[A-Z0-9]{5}$/, { message: 'Token inválido — formato esperado: FUN-XXXXX' }),
+})
+
+export type TokenLoginInput = z.infer<typeof tokenLoginSchema>

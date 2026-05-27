@@ -1,4 +1,5 @@
 import Fastify from 'fastify'
+import fastifyJwt from '@fastify/jwt'
 import { pluginCors } from './plugins/cors'
 import { pluginHelmet } from './plugins/helmet'
 import { pluginRateLimit } from './plugins/rateLimit'
@@ -17,6 +18,9 @@ export async function buildApp() {
   await pluginHelmet(app)
   await pluginCors(app)
   await pluginRateLimit(app)
+  await app.register(fastifyJwt, {
+    secret: process.env.JWT_SECRET ?? 'brain-master-dev-secret',
+  })
 
   app.register(authRoutes, { prefix: '/api/v1/auth' })
   app.register(obrasRoutes, { prefix: '/api/v1/obras' })

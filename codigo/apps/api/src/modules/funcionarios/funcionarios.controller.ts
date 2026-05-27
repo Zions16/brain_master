@@ -46,6 +46,33 @@ export async function handleEditarFuncionario(request: FastifyRequest<{ Params: 
   }
 }
 
+export async function handleBuscarMeuPerfil(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const funcionario = await funcionariosService.buscarMeuPerfil(
+      request.usuario.nome,
+      request.usuario.empresa_id,
+    )
+    return reply.send({ data: funcionario })
+  } catch (err: any) {
+    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  }
+}
+
+export async function handleListarMedicoesDoFuncionario(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  try {
+    const medicoes = await funcionariosService.listarMedicoesDoFuncionario(
+      request.params.id,
+      request.usuario.empresa_id,
+    )
+    return reply.send({ data: medicoes })
+  } catch (err: any) {
+    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  }
+}
+
 export async function handleCalcularProducao(
   request: FastifyRequest<{ Params: { id: string }; Querystring: { inicio?: string; fim?: string } }>,
   reply: FastifyReply,

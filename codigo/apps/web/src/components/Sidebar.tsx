@@ -1,19 +1,49 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Building2, Users, LogOut, HardHat, LayoutDashboard } from 'lucide-react'
+import { Building2, Users, LogOut, HardHat, LayoutDashboard, BarChart2 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
+import type { Perfil } from '@brain-master/shared/tipos'
 
-const NAV = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/obras', label: 'Obras', icon: Building2 },
-  { href: '/funcionarios', label: 'Funcionários', icon: Users },
-]
+type NavItem = { href: string; label: string; icon: React.ElementType }
+
+const NAV_BY_PERFIL: Record<Perfil, NavItem[]> = {
+  GESTOR: [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/obras', label: 'Obras', icon: Building2 },
+    { href: '/funcionarios', label: 'Funcionários', icon: Users },
+  ],
+  FINANCEIRO: [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/obras', label: 'Obras', icon: Building2 },
+  ],
+  ENGENHEIRO: [
+    { href: '/engenheiro', label: 'Início', icon: HardHat },
+    { href: '/obras', label: 'Obras', icon: Building2 },
+  ],
+  FUNCIONARIO: [
+    { href: '/minha-producao', label: 'Minha Produção', icon: BarChart2 },
+  ],
+  COMPRAS: [
+    { href: '/obras', label: 'Obras', icon: Building2 },
+  ],
+}
+
+const PERFIL_LABEL: Record<Perfil, string> = {
+  GESTOR: 'Gestor',
+  ENGENHEIRO: 'Engenheiro',
+  FUNCIONARIO: 'Funcionário',
+  FINANCEIRO: 'Financeiro',
+  COMPRAS: 'Compras',
+}
 
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { usuario, clearAuth } = useAuthStore()
+
+  const perfil = (usuario?.perfil ?? 'GESTOR') as Perfil
+  const nav = NAV_BY_PERFIL[perfil] ?? NAV_BY_PERFIL.GESTOR
 
   function handleLogout() {
     document.cookie = 'bm_token=; path=/; max-age=0'
@@ -33,14 +63,14 @@ export function Sidebar() {
             <span className="text-white font-semibold text-sm tracking-tight block leading-tight">
               Brain Master
             </span>
-            <span className="text-slate-500 text-[11px]">Gestão de Obras</span>
+            <span className="text-slate-500 text-[11px]">{PERFIL_LABEL[perfil]}</span>
           </div>
         </div>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 p-3 space-y-0.5">
-        {NAV.map(({ href, label, icon: Icon }) => {
+        {nav.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           return (
             <Link

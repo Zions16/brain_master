@@ -4,12 +4,28 @@ import Link from 'next/link'
 import { useState } from 'react'
 import {
   ChevronRight, Users, Pencil, X, BarChart2, Search,
-  Briefcase, Banknote, CheckCircle,
+  Briefcase, Banknote, CheckCircle, Ruler, Copy, Check,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
-import type { Funcionario, Obra, TipoPagamento } from '@brain-master/shared/tipos'
+import { useAuthStore } from '@/store/auth'
+import type { Funcionario, Medicao, Obra, TipoPagamento } from '@brain-master/shared/tipos'
 import type { ProducaoResult } from '@/types/producao'
+
+const STATUS_LABEL: Record<string, string> = {
+  pendente: 'Pendente',
+  ativa: 'Ativa',
+  corrigida: 'Corrigida',
+  cancelada: 'Cancelada',
+  pendente_aprovacao: 'Aguard. aprovação',
+}
+const STATUS_CLASS: Record<string, string> = {
+  pendente: 'bg-yellow-100 text-yellow-700',
+  ativa: 'bg-green-100 text-green-700',
+  corrigida: 'bg-blue-100 text-blue-700',
+  cancelada: 'bg-red-100 text-red-700',
+  pendente_aprovacao: 'bg-orange-100 text-orange-700',
+}
 
 const TIPO_LABEL: Record<TipoPagamento, string> = {
   POR_PRODUCAO: 'Por produção',
@@ -22,7 +38,7 @@ const TIPOS: TipoPagamento[] = ['POR_PRODUCAO', 'DIARIA', 'HORA', 'MISTO']
 
 async function fetchFuncionario(id: string): Promise<Funcionario> {
   const { data } = await api.get(`/api/v1/funcionarios/${id}`)
-  return data.data
+  return data
 }
 
 async function fetchObras(): Promise<Obra[]> {
@@ -32,17 +48,44 @@ async function fetchObras(): Promise<Obra[]> {
 
 async function editarFuncionario(id: string, payload: Partial<Funcionario>): Promise<Funcionario> {
   const { data } = await api.patch(`/api/v1/funcionarios/${id}`, payload)
-  return data.data
+  return data
 }
 
 async function fetchProducao(id: string, inicio: string, fim: string): Promise<ProducaoResult> {
   const { data } = await api.get(`/api/v1/funcionarios/${id}/producao`, { params: { inicio, fim } })
-  return data.data
+  return data
+}
+
+async function fetchMedicoes(id: string): Promise<(Medicao & { obra?: { id: string; nome: string } })[]> {
+  const { data } = await api.get(`/api/v1/funcionarios/${id}/medicoes`)
+  return data
+}
+
+function TokenCopiavel({ token }: { token?: string }) {
+  const [copiado, setCopiado] = useState(false)
+  if (!token) return <span className="text-slate-300 text-sm">—</span>
+
+  function copiar() {
+    navigator.clipboard.writeText(token!)
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 1500)
+  }
+
+  return (
+    <button
+      onClick={copiar}
+      className="inline-flex items-center gap-1.5 font-mono text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md transition-colors"
+    >
+      {token}
+      {copiado ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} className="text-slate-400" />}
+    </button>
+  )
 }
 
 export default function FuncionarioDetailPage({ params }: { params: { id: string } }) {
   const { id } = params
   const qc = useQueryClient()
+  const perfilUsuario = useAuthStore((s) => s.usuario?.perfil)
 
   const { data: funcionario, isLoading, isError } = useQuery({
     queryKey: ['funcionario', id],
@@ -135,6 +178,11 @@ export default function FuncionarioDetailPage({ params }: { params: { id: string
     enabled: consultarAtivado,
   })
 
+  const { data: medicoes, isLoading: carregandoMedicoes } = useQuery({
+    queryKey: ['funcionario-medicoes', id],
+    queryFn: () => fetchMedicoes(id),
+  })
+
   function handleConsultar(e: React.FormEvent) {
     e.preventDefault()
     if (!consultarAtivado) {
@@ -223,6 +271,15 @@ export default function FuncionarioDetailPage({ params }: { params: { id: string
               <p className="text-sm font-medium text-slate-800">Vinculado</p>
             </div>
           </div>
+          {perfilUsuario === 'GESTOR' && (
+            <div className="flex items-start gap-2 sm:col-span-3">
+              <CheckCircle size={15} className="text-slate-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-xs text-slate-400 mb-1">Token de acesso (funcionário usa para logar)</p>
+                <TokenCopiavel token={funcionario.token_acesso} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -467,6 +524,70 @@ export default function FuncionarioDetailPage({ params }: { params: { id: string
           <p className="text-slate-400 text-sm text-center py-6">
             Selecione o período e clique em Consultar para ver a produção.
           </p>
+        )}
+      </div>
+
+      {/* Medições recentes */}
+      <div className="bg-white border border-slate-200 rounded-xl p-6 mt-5">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+            <Ruler size={18} className="text-blue-600" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-slate-900">Medições recentes</h2>
+            {medicoes && (
+              <p className="text-xs text-slate-400 mt-0.5">Últimas {medicoes.length} medições</p>
+            )}
+          </div>
+        </div>
+
+        {carregandoMedicoes && <LoadingSpinner />}
+
+        {!carregandoMedicoes && medicoes && medicoes.length === 0 && (
+          <p className="text-slate-400 text-sm text-center py-6">Nenhuma medição registrada para este funcionário.</p>
+        )}
+
+        {medicoes && medicoes.length > 0 && (
+          <div className="border border-slate-200 rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide">Data</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide hidden sm:table-cell">Obra</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide">Serviço</th>
+                  <th className="text-right px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide">Qtd.</th>
+                  <th className="text-right px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide">Valor</th>
+                  <th className="text-center px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {medicoes.map((m) => (
+                  <tr key={m.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3 text-slate-600 text-sm">
+                      {new Date(m.data).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td className="px-4 py-3 text-slate-500 text-sm hidden sm:table-cell">
+                      {(m as any).obra?.nome ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-slate-800 font-medium text-sm">
+                      {m.servico?.nome ?? m.servico_id}
+                    </td>
+                    <td className="px-4 py-3 text-right text-slate-700 text-sm">
+                      {m.quantidade} <span className="text-slate-400 text-xs">{m.servico?.unidade_medida ?? ''}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-slate-900 text-sm">
+                      {m.valor_calculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_CLASS[m.status] ?? 'bg-slate-100 text-slate-500'}`}>
+                        {STATUS_LABEL[m.status] ?? m.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

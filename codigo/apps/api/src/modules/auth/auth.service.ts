@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabase'
 import { LoginInput } from '@brain-master/validators'
-import { AuthResponse, UsuarioSession } from '@brain-master/shared/tipos'
+import { AuthResponse, Funcionario, UsuarioSession } from '@brain-master/shared/tipos'
 
 // Cliente isolado exclusivamente para operações de auth do usuário (signIn, refresh, signOut).
 // Nunca usar o singleton supabase para auth — signInWithPassword seta a sessão interna
@@ -63,4 +63,19 @@ export async function refresh(refreshToken: string): Promise<AuthResponse> {
 
 export async function logout(accessToken: string): Promise<void> {
   await authOpsClient.auth.admin.signOut(accessToken)
+}
+
+export async function buscarFuncionarioPorToken(token: string): Promise<Funcionario> {
+  const { data, error } = await supabase
+    .from('funcionario')
+    .select('*')
+    .eq('token_acesso', token.toUpperCase())
+    .eq('ativo', true)
+    .single()
+
+  if (error || !data) {
+    throw { statusCode: 401, message: 'Token inválido ou funcionário inativo' }
+  }
+
+  return data as Funcionario
 }

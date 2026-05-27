@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
-import { loginSchema } from '@brain-master/validators'
+import '@fastify/jwt'
+import { loginSchema, tokenLoginSchema } from '@brain-master/validators'
 import * as authService from './auth.service'
 
 export async function handleLogin(request: FastifyRequest, reply: FastifyReply) {
@@ -45,6 +46,29 @@ export async function handleRefresh(request: FastifyRequest, reply: FastifyReply
       error: 'Unauthorized',
       message: err.message ?? 'Erro interno',
     })
+  }
+}
+
+export async function handleTokenLogin(request: FastifyRequest, reply: FastifyReply) {
+  const body = tokenLoginSchema.safeParse(request.body)
+  if (!body.success) {
+    return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: body.error.errors[0]?.message ?? 'Token inválido' })
+  }
+
+  try {
+    const funcionario = await authService.buscarFuncionarioPorToken(body.data.token)
+    const access_token = await reply.jwtSign(
+      { sub: funcionario.id, empresa_id: funcionario.empresa_id, nome: funcionario.nome, perfil: 'FUNCIONARIO' },
+      { expiresIn: '7d' },
+    )
+    return reply.status(200).send({
+      data: {
+        access_token,
+        usuario: { id: funcionario.id, empresa_id: funcionario.empresa_id, nome: funcionario.nome, perfil: 'FUNCIONARIO' },
+      },
+    })
+  } catch (err: any) {
+    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Unauthorized', message: err.message })
   }
 }
 

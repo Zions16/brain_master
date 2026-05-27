@@ -10,6 +10,8 @@ export const criarObraSchema = z.object({
   responsavel_id: z.string().uuid({ message: 'ID de responsável inválido' }).optional(),
   data_inicio: z.string().date().optional(),
   data_prev_fim: z.string().date().optional(),
+  valor_contrato: z.number().positive({ message: 'Valor do contrato deve ser positivo' }).optional(),
+  lucro_esperado: z.number().positive({ message: 'Lucro esperado deve ser positivo' }).optional(),
 })
 
 export const editarObraSchema = criarObraSchema.partial()
