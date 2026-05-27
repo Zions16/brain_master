@@ -136,7 +136,7 @@ export default function ObraDetailPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-stagger">
         {SECTIONS.map(({ href, label, description, icon: Icon, color, border }) => (
           <Link
             key={label}

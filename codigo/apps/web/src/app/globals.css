@@ -1,3 +1,141 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Design Tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-subtle: #eef2ff;
+  --accent-glow: rgba(79, 70, 229, 0.18);
+
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --border: #e2e8f0;
+  --border-subtle: #f1f5f9;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────────── */
+@layer base {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* ── Components ─────────────────────────────────────────────────────────────── */
+@layer components {
+
+  /* Botões primários — micro-interação de elevação */
+  .btn-elevate {
+    transition: transform var(--transition), box-shadow var(--transition);
+  }
+  .btn-elevate:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+  }
+  .btn-elevate:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Cards com hover elevado */
+  .card-hover {
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    box-shadow: var(--shadow-sm);
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      #f1f5f9 25%,
+      #e8edf4 50%,
+      #f1f5f9 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease infinite;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Entrada com fade-up — iniciar opaque 0 */
+  .animate-stagger > * {
+    opacity: 0;
+    animation: fade-up 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  .animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .animate-stagger > *:nth-child(2) { animation-delay: 60ms; }
+  .animate-stagger > *:nth-child(3) { animation-delay: 120ms; }
+  .animate-stagger > *:nth-child(4) { animation-delay: 180ms; }
+  .animate-stagger > *:nth-child(5) { animation-delay: 240ms; }
+  .animate-stagger > *:nth-child(6) { animation-delay: 300ms; }
+  .animate-stagger > *:nth-child(n+7) { animation-delay: 360ms; }
+}
+
+  /* Micro-interação automática em todos os botões primários coloridos */
+  button[class*="bg-blue-6"]:not([disabled]),
+  button[class*="bg-green-6"]:not([disabled]),
+  button[class*="bg-violet-6"]:not([disabled]),
+  button[class*="bg-indigo-6"]:not([disabled]),
+  a[class*="bg-blue-6"],
+  a[class*="bg-green-6"],
+  a[class*="bg-indigo-6"] {
+    transition-property: color, background-color, border-color, transform, box-shadow;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  button[class*="bg-blue-6"]:not([disabled]):hover,
+  button[class*="bg-green-6"]:not([disabled]):hover,
+  button[class*="bg-violet-6"]:not([disabled]):hover,
+  button[class*="bg-indigo-6"]:not([disabled]):hover,
+  a[class*="bg-blue-6"]:hover,
+  a[class*="bg-green-6"]:hover,
+  a[class*="bg-indigo-6"]:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  button[class*="bg-blue-6"]:not([disabled]):active,
+  button[class*="bg-green-6"]:not([disabled]):active,
+  button[class*="bg-violet-6"]:not([disabled]):active,
+  button[class*="bg-indigo-6"]:not([disabled]):active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: none;
+  }
+}
+
+/* ── Accessibility — motion ─────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

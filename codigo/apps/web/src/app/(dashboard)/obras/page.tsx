@@ -51,12 +51,12 @@ export default function ObrasPage() {
           <p className="text-slate-400 text-sm">As obras cadastradas aparecerão aqui.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-stagger">
           {obras.map((obra) => (
             <Link
               key={obra.id}
               href={`/obras/${obra.id}`}
-              className="group bg-white border border-slate-200 rounded-xl p-5 hover:border-blue-300 hover:shadow-md transition-all"
+              className="group bg-white border border-slate-200 rounded-xl p-5 card-hover hover:border-indigo-200"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
