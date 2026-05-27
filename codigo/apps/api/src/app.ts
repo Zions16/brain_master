@@ -6,6 +6,7 @@ import { pluginRateLimit } from './plugins/rateLimit'
 import { authRoutes } from './modules/auth/auth.routes'
 import { obrasRoutes } from './modules/obras/obras.routes'
 import { funcionariosRoutes } from './modules/funcionarios/funcionarios.routes'
+import { engenheirosRoutes } from './modules/engenheiros/engenheiros.routes'
 import { servicosRoutes } from './modules/servicos/servicos.routes'
 import { medicoesRoutes } from './modules/medicoes/medicoes.routes'
 import { pagamentosRoutes } from './modules/pagamentos/pagamentos.routes'
@@ -25,6 +26,7 @@ export async function buildApp() {
   app.register(authRoutes, { prefix: '/api/v1/auth' })
   app.register(obrasRoutes, { prefix: '/api/v1/obras' })
   app.register(funcionariosRoutes, { prefix: '/api/v1/funcionarios' })
+  app.register(engenheirosRoutes, { prefix: '/api/v1/engenheiros' })
   app.register(servicosRoutes, { prefix: '/api/v1/obras' })
   app.register(medicoesRoutes, { prefix: '/api/v1/obras' })
   app.register(pagamentosRoutes, { prefix: '/api/v1/obras' })

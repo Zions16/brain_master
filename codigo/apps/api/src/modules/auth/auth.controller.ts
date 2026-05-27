@@ -71,7 +71,7 @@ export async function handleTokenLogin(request: FastifyRequest, reply: FastifyRe
         },
       })
     } else {
-      const engenheiro = await authService.buscarEngenheirooPorToken(token)
+      const engenheiro = await authService.buscarEngenheiroPorToken(token)
       const access_token = await reply.jwtSign(
         { sub: engenheiro.id, empresa_id: engenheiro.empresa_id, nome: engenheiro.nome, perfil: 'ENGENHEIRO' },
         { expiresIn: '7d' },

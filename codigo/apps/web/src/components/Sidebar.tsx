@@ -12,6 +12,7 @@ const NAV_BY_PERFIL: Record<Perfil, NavItem[]> = {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/obras', label: 'Obras', icon: Building2 },
     { href: '/funcionarios', label: 'Funcionários', icon: Users },
+    { href: '/engenheiros', label: 'Engenheiros', icon: HardHat },
   ],
   FINANCEIRO: [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },

@@ -80,7 +80,7 @@ export async function buscarFuncionarioPorToken(token: string): Promise<Funciona
   return data as Funcionario
 }
 
-export async function buscarEngenheirooPorToken(token: string): Promise<UsuarioSession> {
+export async function buscarEngenheiroPorToken(token: string): Promise<UsuarioSession> {
   const { data, error } = await supabase
     .from('usuario')
     .select('id, empresa_id, nome, perfil')
