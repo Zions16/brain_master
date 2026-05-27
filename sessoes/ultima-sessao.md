@@ -4,51 +4,46 @@
 2026-05-27
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 10 — Dashboard interativo por obra
+Fase 1 — Sprint 11 — Home dashboard redesign + Dashboard por obra aprimorado
 
 ## O que foi feito
 
-### obras/[id]/dashboard/page.tsx — criado do zero
-- Filtro de período (início/fim) com botão "Aplicar" — controla gráficos e tabela
-- 4 KPI cards: total pago, pendente, medições no período, funcionários com produção
-- Gráfico de linha (Recharts): evolução de pagamentos por mês — verde=pago, amarelo=pendente
-- Gráfico de barras horizontal (Recharts): produção por funcionário, ordenado do maior para menor
-- Tabela comparativa: ranking de funcionários com medições, valor produzido, barra de % proporcional, qtd de serviços
-- Tooltip customizado formatado em BRL
+### obras/page.tsx — transformado em home dashboard
+- Saudação dinâmica com nome do usuário e data formatada
+- 4 KPI cards com stagger-children animation: total obras, ativas, pausadas, funcionários
+- Lista de obras como tabela com colunas: nome+ícone, cliente, data início, status com dot colorido
+- Footer com contagem por status (ativas/pausadas/encerradas)
+- `fade-in` no wrapper da página
 
-### obras/[id]/page.tsx — atualizado
-- Card "Dashboard" adicionado (indigo) como primeiro card de navegação
-- Grid de 3 para 4 colunas (sm:grid-cols-2 lg:grid-cols-4)
+### obras/[id]/dashboard/page.tsx — completamente reescrito
+- Filtro de período (De/Até) que controla todos os dados
+- 4 KPI cards históricos: total pago, pendente, produção no período, média/funcionário
+- Layout 2 colunas: LineChart de pagamentos históricos + card "Maior produtor" (avatar, total, top 3 serviços)
+- Layout 5 colunas: BarChart horizontal por funcionário (indigo para #1) + ranking table com destaque do 1º lugar, barra % proporcional, totais no footer
 
-### Tipos auxiliares criados
-- `apps/web/src/types/calculo.ts` — CalculoPagamento (espelha o tipo da API)
+### globals.css — fix do bug de cards invisíveis + polish
+- Keyframes (@keyframes fade-up, fade-in, shimmer) movidos para dentro do CSS diretamente
+- Causa do bug: Tailwind JIT só inclui keyframes quando a classe `animate-X` aparece em TSX — não em CSS puro
+- Micro-interações em botões primários (bg-blue/green/indigo/violet) com transform + box-shadow
+- prefers-reduced-motion respeitado globalmente
 
-### Dependência instalada
-- `recharts` via npm
+## Arquivos alterados
+- `apps/web/src/app/(dashboard)/obras/page.tsx`
+- `apps/web/src/app/(dashboard)/obras/[id]/dashboard/page.tsx`
+- `apps/web/src/app/globals.css`
 
-## Arquivos alterados/criados
-- `apps/web/src/app/(dashboard)/obras/[id]/dashboard/page.tsx` ← novo
-- `apps/web/src/app/(dashboard)/obras/[id]/page.tsx` ← card Dashboard + grid 4 cols
-- `apps/web/src/types/calculo.ts` ← novo
-- `apps/web/package.json` ← recharts adicionado
+## Commit
+`96ca2b7` — feat(web): home dashboard redesign + dashboard por obra aprimorado
 
-## Decisões tomadas
-- Dashboard é per-obra (não global) — os dados de medição e pagamento vivem no contexto da obra
-- Linha temporal usa todos os pagamentos (sem filtro de período) para mostrar histórico completo
-- Barras e tabela usam o endpoint `/calcular?inicio=&fim=` que já existe — sem novo endpoint
-- Tooltip BRL customizado — mais legível que o padrão do Recharts
+## Decisões técnicas
+- Keyframes em globals.css (não em tailwind.config.ts) quando usados via @layer components
+- stagger-children via CSS puro (nth-child delays) — sem Framer Motion
+- Dashboard por obra usa endpoint `/calcular` existente — sem novo endpoint
 
 ## Onde parou
-TypeScript compilando sem erros. Web rodando em localhost:3001.
+Commit e push feitos. Web rodando em localhost:3001.
 
 ## Próxima ação (EXATA)
-1. Testar no browser: `/obras/:id` → clicar Dashboard → testar filtro de período
-2. Se ok: commit + push
-3. Próximo: avaliar o que falta para fechar o MVP da Fase 1
-
-## Commit sugerido
-```
-git add -A
-git commit -m "feat(web): dashboard interativo por obra — gráficos de produção e comparativo de funcionários"
-git push origin main
-```
+1. Testar no browser: home dashboard + `/obras/:id/dashboard` com filtro de período
+2. Avaliar o que falta para fechar o MVP da Fase 1 (review com o usuário)
+3. Possíveis itens pendentes: página de relatórios global, exportação PDF, notificações
