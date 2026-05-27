@@ -13,3 +13,5 @@
 | 2026-05-22 | Sprint 5 — Serviços + Medições completas; bugfix session pollution + obra_vinculada ausente | Concluído |
 | 2026-05-22 | Sprint 6 — Pagamentos (4 endpoints); bugfix raiz session pollution em auth.service.ts | Concluído |
 - 2026-05-26 | Sprint 7 | feat(web): scaffold completo do dashboard (Next.js 14) — login, obras, medições, pagamentos, funcionários
+| 2026-05-27 | Sprint 11 | feat(web): home dashboard redesign + dashboard por obra com filtro de período, charts e ranking |
+| 2026-05-27 | Sprint 12 | feat: dashboard geral + lucratividade por obra + seed demo + página de serviços com preços duplos |

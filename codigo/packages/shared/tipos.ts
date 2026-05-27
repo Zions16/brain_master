@@ -213,3 +213,13 @@ export interface ResumoFuncionario {
   periodo_inicio: string
   periodo_fim: string
 }
+
+export interface ObraResumo extends Obra {
+  total_pago: number
+  total_pendente: number
+  total_medicoes: number
+  total_funcionarios: number
+  progresso_pct: number | null
+  total_custo_producao: number
+  total_cobranca_producao: number
+}

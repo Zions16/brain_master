@@ -4,46 +4,52 @@
 2026-05-27
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 11 — Home dashboard redesign + Dashboard por obra aprimorado
+Fase 1 — Sprint 12 — Dashboard Geral + Lucratividade + Seed de demonstração
 
 ## O que foi feito
 
-### obras/page.tsx — transformado em home dashboard
-- Saudação dinâmica com nome do usuário e data formatada
-- 4 KPI cards com stagger-children animation: total obras, ativas, pausadas, funcionários
-- Lista de obras como tabela com colunas: nome+ícone, cliente, data início, status com dot colorido
-- Footer com contagem por status (ativas/pausadas/encerradas)
-- `fade-in` no wrapper da página
-
-### obras/[id]/dashboard/page.tsx — completamente reescrito
-- Filtro de período (De/Até) que controla todos os dados
-- 4 KPI cards históricos: total pago, pendente, produção no período, média/funcionário
-- Layout 2 colunas: LineChart de pagamentos históricos + card "Maior produtor" (avatar, total, top 3 serviços)
-- Layout 5 colunas: BarChart horizontal por funcionário (indigo para #1) + ranking table com destaque do 1º lugar, barra % proporcional, totais no footer
-
-### globals.css — fix do bug de cards invisíveis + polish
-- Keyframes (@keyframes fade-up, fade-in, shimmer) movidos para dentro do CSS diretamente
-- Causa do bug: Tailwind JIT só inclui keyframes quando a classe `animate-X` aparece em TSX — não em CSS puro
-- Micro-interações em botões primários (bg-blue/green/indigo/violet) com transform + box-shadow
-- prefers-reduced-motion respeitado globalmente
+- Seed completo (`seed_demo.sql`): 3 obras, 12 funcionários, 4 serviços/obra, ~60 medições, pagamentos mix realizado/pendente
+- Fix `fix_cobranca.sql`: UPDATE que popula `valor_cobranca_calculado` nas medições do seed
+- API: endpoint `GET /api/v1/obras/resumo` com lucratividade por obra
+- API: `calcularValorPeriodo` retorna `valor_cobranca_total` (receita bruta do período)
+- Tipos: `ObraResumo` com `total_custo_producao` e `total_cobranca_producao`
+- Dashboard Geral (`/dashboard`): KPIs globais em 2 linhas (pagamentos + lucratividade), cards por obra com margem verde/vermelho
+- Dashboard individual: nova seção "Lucratividade no período" (receita, custo, margem R$, margem %, barra visual)
+- Serviços: formulário e tabela com `valor_pagamento` + `valor_cobranca` + margem calculada em tempo real
+- Sidebar: item "Dashboard" adicionado como primeiro item
+- Middleware: redirect pós-login → `/dashboard`
+- Bug corrigido: `fetchCalculo` fazia `return data.data` causando `undefined` — corrigido para `return data`
 
 ## Arquivos alterados
-- `apps/web/src/app/(dashboard)/obras/page.tsx`
-- `apps/web/src/app/(dashboard)/obras/[id]/dashboard/page.tsx`
-- `apps/web/src/app/globals.css`
+- `supabase/seeds/seed_demo.sql` — criado
+- `supabase/seeds/fix_cobranca.sql` — criado
+- `packages/shared/tipos.ts` — ObraResumo com lucratividade
+- `apps/api/src/modules/obras/obras.service.ts` — resumoTodasObras
+- `apps/api/src/modules/obras/obras.controller.ts` — handleResumoObras
+- `apps/api/src/modules/obras/obras.routes.ts` — GET /resumo
+- `apps/api/src/modules/pagamentos/pagamentos.service.ts` — valor_cobranca_total
+- `apps/web/src/types/calculo.ts` — CalculoPagamento atualizado
+- `apps/web/src/app/(dashboard)/dashboard/page.tsx` — criado
+- `apps/web/src/app/(dashboard)/obras/[id]/dashboard/page.tsx` — lucratividade + bugfix
+- `apps/web/src/app/(dashboard)/obras/[id]/servicos/page.tsx` — preços duplos e margem
+- `apps/web/src/components/Sidebar.tsx` — Dashboard nav item
+- `apps/web/src/middleware.ts` — redirect /dashboard
+- `processo/sprints/sprint-12-dashboard-geral-lucratividade.md` — criado
+- `processo/erros-e-solucoes.md` — bug fetchCalculo documentado
+- `sessoes/historico.md` — sprints 11 e 12 adicionados
 
 ## Commit
-`96ca2b7` — feat(web): home dashboard redesign + dashboard por obra aprimorado
+(próximo commit desta sessão)
 
 ## Decisões técnicas
-- Keyframes em globals.css (não em tailwind.config.ts) quando usados via @layer components
-- stagger-children via CSS puro (nth-child delays) — sem Framer Motion
-- Dashboard por obra usa endpoint `/calcular` existente — sem novo endpoint
+- N+2 queries por obra no /resumo — aceitável para MVP, revisar se escalar
+- valor_cobranca continua opcional — obras sem cobrança cadastrada mostram "—", não erram
+- Seed usa DO $$ com lookup dinâmico — roda em qualquer instância Supabase
 
 ## Onde parou
-Commit e push feitos. Web rodando em localhost:3001.
+Código commitado. Seed rodado no Supabase. Web funcionando em localhost:3001.
 
 ## Próxima ação (EXATA)
-1. Testar no browser: home dashboard + `/obras/:id/dashboard` com filtro de período
-2. Avaliar o que falta para fechar o MVP da Fase 1 (review com o usuário)
-3. Possíveis itens pendentes: página de relatórios global, exportação PDF, notificações
+- Avaliar se valor_cobranca deve virar obrigatório
+- Avaliar relatório exportável (PDF) para Sprint 13
+- Revisar o que falta para fechar o MVP da Fase 1

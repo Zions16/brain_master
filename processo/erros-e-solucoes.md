@@ -89,6 +89,29 @@ return data
 
 ---
 
+## [2026-05-27] `fetchCalculo` retornava `undefined` por duplo desembrulhamento
+
+**Contexto:** Sprint 12 — dashboard por obra (seção "Produção por funcionário")  
+**Sintoma:** Seções "Produção por funcionário", "Ranking de equipe" e "Maior produtor" sempre mostravam "Sem dados no período", mesmo após inserir medições via seed.
+
+**Causa raiz:**  
+```typescript
+// ❌ Errado — data.data = undefined
+async function fetchCalculo(...): Promise<CalculoPagamento[]> {
+  const { data } = await api.get(`/api/v1/obras/${obraId}/pagamentos/calcular`, ...)
+  return data.data  // interceptor já desembrulhou: data = array, .data = undefined
+}
+```
+O interceptor do Axios em `api.ts` já faz `res.data = res.data.data` (desembrulha `{ data: X }` → `X`). A função fazia `.data` uma segunda vez, resultando em `undefined`. Como `calculo ?? []` = `[]`, o componente sempre mostrava "Sem dados".
+
+**Por que não apareceu antes:** Antes do seed não havia medições — endpoint retornava `[]` de qualquer forma, erro era silencioso.
+
+**Solução:** `return data` (linha 29 de `obras/[id]/dashboard/page.tsx`)
+
+**Lição:** Toda chamada nova de API no web deve usar `return data`, nunca `return data.data`. O interceptor já resolve o envelope `{ data: X }`.
+
+---
+
 ## [2026-05-26] `React.use(params)` não existe no Next.js 14
 
 **Contexto:** Sprint 7 — páginas com dynamic routes `[id]`  

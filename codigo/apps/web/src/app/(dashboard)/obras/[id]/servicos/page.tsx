@@ -2,12 +2,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useState } from 'react'
-import { ChevronRight, Wrench, Plus, X } from 'lucide-react'
+import { ChevronRight, Wrench, Plus, X, TrendingUp, TrendingDown } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import type { Servico } from '@brain-master/shared/tipos'
 
 const UNIDADES = ['M2', 'ML', 'M3', 'UN', 'KG', 'HORA', 'PECA'] as const
+
+function brl(v: number) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
 
 async function fetchServicos(obraId: string): Promise<Servico[]> {
   const { data } = await api.get(`/api/v1/obras/${obraId}/servicos`)
@@ -16,13 +20,13 @@ async function fetchServicos(obraId: string): Promise<Servico[]> {
 
 async function criarServico(
   obraId: string,
-  payload: { nome: string; unidade_medida: string; valor_pagamento: number },
+  payload: { nome: string; unidade_medida: string; valor_pagamento: number; valor_cobranca?: number },
 ): Promise<Servico> {
   const { data } = await api.post(`/api/v1/obras/${obraId}/servicos`, payload)
   return data
 }
 
-const EMPTY_FORM = { nome: '', unidade_medida: 'M2', valor_pagamento: '' }
+const EMPTY_FORM = { nome: '', unidade_medida: 'M2', valor_pagamento: '', valor_cobranca: '' }
 
 export default function ServicosPage({ params }: { params: { id: string } }) {
   const { id } = params
@@ -38,12 +42,17 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
   const [erroForm, setErroForm] = useState('')
 
   const { mutate: criar, isPending } = useMutation({
-    mutationFn: () =>
-      criarServico(id, {
+    mutationFn: () => {
+      const payload: { nome: string; unidade_medida: string; valor_pagamento: number; valor_cobranca?: number } = {
         nome: form.nome.trim(),
         unidade_medida: form.unidade_medida,
         valor_pagamento: Number(form.valor_pagamento),
-      }),
+      }
+      if (form.valor_cobranca !== '') {
+        payload.valor_cobranca = Number(form.valor_cobranca)
+      }
+      return criarServico(id, payload)
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['servicos', id] })
       setForm(EMPTY_FORM)
@@ -59,8 +68,12 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
     e.preventDefault()
     setErroForm('')
     if (!form.nome.trim()) return setErroForm('Nome é obrigatório.')
-    const valor = Number(form.valor_pagamento)
-    if (!valor || valor <= 0) return setErroForm('Valor deve ser maior que zero.')
+    const pagamento = Number(form.valor_pagamento)
+    if (!pagamento || pagamento <= 0) return setErroForm('Valor de pagamento deve ser maior que zero.')
+    if (form.valor_cobranca !== '') {
+      const cobranca = Number(form.valor_cobranca)
+      if (!cobranca || cobranca <= 0) return setErroForm('Valor de cobrança deve ser maior que zero.')
+    }
     criar()
   }
 
@@ -116,7 +129,8 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            {/* Linha 1: Nome + Unidade */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Nome</label>
                 <input
@@ -128,7 +142,7 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Unidade</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Unidade de medida</label>
                 <select
                   value={form.unidade_medida}
                   onChange={(e) => setForm((f) => ({ ...f, unidade_medida: e.target.value }))}
@@ -139,9 +153,13 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Linha 2: Preços */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
-                  Valor por unidade (R$)
+                  Valor pago ao funcionário (R$)
                 </label>
                 <input
                   type="number"
@@ -152,6 +170,42 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
                   onChange={(e) => setForm((f) => ({ ...f, valor_pagamento: e.target.value }))}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
+                <p className="text-xs text-slate-400 mt-1">Custo por unidade produzida</p>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  Valor cobrado do cliente (R$)
+                </label>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  placeholder="0,00 (opcional)"
+                  value={form.valor_cobranca}
+                  onChange={(e) => setForm((f) => ({ ...f, valor_cobranca: e.target.value }))}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+                <p className="text-xs text-slate-400 mt-1">Receita por unidade produzida</p>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  Margem por unidade
+                </label>
+                <div className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-slate-50 min-h-[42px] flex items-center">
+                  {form.valor_cobranca !== '' && form.valor_pagamento !== '' ? (
+                    (() => {
+                      const margem = Number(form.valor_cobranca) - Number(form.valor_pagamento)
+                      return (
+                        <span className={`font-bold ${margem >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                          {margem >= 0 ? '+' : ''}{brl(margem)}
+                        </span>
+                      )
+                    })()
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 mt-1">Calculado automaticamente</p>
               </div>
             </div>
 
@@ -203,34 +257,125 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Nome</th>
+                <th className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Serviço</th>
                 <th className="text-left px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Unidade</th>
-                <th className="text-right px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Valor por unidade</th>
+                <th className="text-right px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">
+                  <span className="flex items-center justify-end gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-slate-400 inline-block" />
+                    Pago ao func.
+                  </span>
+                </th>
+                <th className="text-right px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide hidden sm:table-cell">
+                  <span className="flex items-center justify-end gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                    Cobrado do cliente
+                  </span>
+                </th>
+                <th className="text-right px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide hidden md:table-cell">Margem/unid.</th>
                 <th className="text-center px-5 py-3.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {servicos.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-5 py-4 font-medium text-slate-900">{s.nome}</td>
-                  <td className="px-5 py-4">
-                    <span className="bg-slate-100 text-slate-600 text-xs font-medium px-2 py-1 rounded">
-                      {s.unidade_medida}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-right font-bold text-slate-900">
-                    {s.valor_pagamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </td>
-                  <td className="px-5 py-4 text-center">
-                    <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full ${
-                      s.ativo ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
-                    }`}>
-                      {s.ativo ? 'Ativo' : 'Inativo'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {servicos.map((s) => {
+                const margem =
+                  s.valor_cobranca != null
+                    ? s.valor_cobranca - s.valor_pagamento
+                    : null
+                const margemPct =
+                  s.valor_cobranca != null && s.valor_cobranca > 0
+                    ? ((s.valor_cobranca - s.valor_pagamento) / s.valor_cobranca) * 100
+                    : null
+
+                return (
+                  <tr key={s.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-5 py-4 font-medium text-slate-900">{s.nome}</td>
+                    <td className="px-5 py-4">
+                      <span className="bg-slate-100 text-slate-600 text-xs font-medium px-2 py-1 rounded">
+                        {s.unidade_medida}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-right font-semibold text-slate-700">
+                      {brl(s.valor_pagamento)}
+                    </td>
+                    <td className="px-5 py-4 text-right font-semibold text-blue-700 hidden sm:table-cell">
+                      {s.valor_cobranca != null
+                        ? brl(s.valor_cobranca)
+                        : <span className="text-slate-300 font-normal">—</span>
+                      }
+                    </td>
+                    <td className="px-5 py-4 text-right hidden md:table-cell">
+                      {margem !== null ? (
+                        <div className="flex items-center justify-end gap-1.5">
+                          {margem >= 0
+                            ? <TrendingUp size={13} className="text-emerald-500" />
+                            : <TrendingDown size={13} className="text-red-500" />
+                          }
+                          <span className={`font-bold ${margem >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                            {margem >= 0 ? '+' : ''}{brl(margem)}
+                          </span>
+                          {margemPct !== null && (
+                            <span className={`text-xs ${margem >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+                              ({margemPct.toFixed(0)}%)
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full ${
+                        s.ativo ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {s.ativo ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
+
+            {/* Footer com totalizadores se houver valor_cobranca */}
+            {servicos.some((s) => s.valor_cobranca != null) && (
+              <tfoot>
+                <tr className="border-t border-slate-200 bg-slate-50/80">
+                  <td colSpan={2} className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    Média entre serviços ativos
+                  </td>
+                  <td className="px-5 py-3 text-right text-xs font-bold text-slate-700">
+                    {brl(
+                      servicos.filter((s) => s.ativo).reduce((s, v) => s + v.valor_pagamento, 0) /
+                        (servicos.filter((s) => s.ativo).length || 1)
+                    )}
+                  </td>
+                  <td className="px-5 py-3 text-right text-xs font-bold text-blue-700 hidden sm:table-cell">
+                    {(() => {
+                      const comCobranca = servicos.filter((s) => s.ativo && s.valor_cobranca != null)
+                      if (!comCobranca.length) return <span className="text-slate-300">—</span>
+                      return brl(
+                        comCobranca.reduce((s, v) => s + (v.valor_cobranca ?? 0), 0) / comCobranca.length
+                      )
+                    })()}
+                  </td>
+                  <td className="px-5 py-3 text-right hidden md:table-cell">
+                    {(() => {
+                      const comCobranca = servicos.filter((s) => s.ativo && s.valor_cobranca != null)
+                      if (!comCobranca.length) return <span className="text-slate-300">—</span>
+                      const mediaM = comCobranca.reduce(
+                        (s, v) => s + ((v.valor_cobranca ?? 0) - v.valor_pagamento),
+                        0
+                      ) / comCobranca.length
+                      return (
+                        <span className={`font-bold text-xs ${mediaM >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                          {mediaM >= 0 ? '+' : ''}{brl(mediaM)}
+                        </span>
+                      )
+                    })()}
+                  </td>
+                  <td className="hidden md:table-cell" />
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       )}

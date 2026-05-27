@@ -10,6 +10,7 @@ export interface CalculoPagamento {
   periodo_fim: string
   total_medicoes: number
   valor_total: number
+  valor_cobranca_total: number
   por_servico: Array<{
     servico_id: string
     servico_nome: string
@@ -47,10 +48,10 @@ async function calcularValorPeriodo(
   funcionarioId: string,
   inicio: string,
   fim: string,
-): Promise<{ valor_total: number; total_medicoes: number; por_servico: CalculoPagamento['por_servico'] }> {
+): Promise<{ valor_total: number; valor_cobranca_total: number; total_medicoes: number; por_servico: CalculoPagamento['por_servico'] }> {
   const { data: medicoes, error } = await supabase
     .from('medicao')
-    .select('quantidade, valor_calculado, servico:servico_id(id, nome, unidade_medida)')
+    .select('quantidade, valor_calculado, valor_cobranca_calculado, servico:servico_id(id, nome, unidade_medida)')
     .eq('obra_id', obraId)
     .eq('funcionario_id', funcionarioId)
     .eq('status', 'ativa')
@@ -61,6 +62,7 @@ async function calcularValorPeriodo(
 
   const porServico = new Map<string, CalculoPagamento['por_servico'][number]>()
   let valorTotal = 0
+  let valorCobrancaTotal = 0
   let totalMedicoes = 0
 
   for (const m of medicoes ?? []) {
@@ -68,6 +70,7 @@ async function calcularValorPeriodo(
     if (!servico) continue
 
     valorTotal += m.valor_calculado
+    valorCobrancaTotal += m.valor_cobranca_calculado ?? 0
     totalMedicoes++
 
     const existing = porServico.get(servico.id)
@@ -87,6 +90,7 @@ async function calcularValorPeriodo(
 
   return {
     valor_total: Number(valorTotal.toFixed(2)),
+    valor_cobranca_total: Number(valorCobrancaTotal.toFixed(2)),
     total_medicoes: totalMedicoes,
     por_servico: Array.from(porServico.values()),
   }

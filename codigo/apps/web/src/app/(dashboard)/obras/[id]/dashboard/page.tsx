@@ -8,7 +8,7 @@ import {
 } from 'recharts'
 import {
   ChevronRight, LayoutDashboard, Banknote, Clock,
-  Users, TrendingUp, Award, Search, AlertCircle,
+  Users, TrendingUp, TrendingDown, Award, Search, AlertCircle, DollarSign,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
@@ -26,7 +26,7 @@ async function fetchCalculo(obraId: string, inicio: string, fim: string): Promis
   const { data } = await api.get(`/api/v1/obras/${obraId}/pagamentos/calcular`, {
     params: { inicio, fim },
   })
-  return data.data
+  return data
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -108,8 +108,12 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
   const calcOrdenado = [...(calculo ?? [])].sort((a, b) => b.valor_total - a.valor_total)
   const topFuncionario = calcOrdenado[0]
   const totalProducao = calcOrdenado.reduce((s, c) => s + c.valor_total, 0)
+  const totalCobranca = calcOrdenado.reduce((s, c) => s + (c.valor_cobranca_total ?? 0), 0)
   const totalMedicoes = calcOrdenado.reduce((s, c) => s + c.total_medicoes, 0)
   const mediaProducao = calcOrdenado.length > 0 ? totalProducao / calcOrdenado.length : 0
+  const margem = totalCobranca - totalProducao
+  const margemPct = totalCobranca > 0 ? (margem / totalCobranca) * 100 : 0
+  const lucrativa = margem >= 0
 
   // Dados para o gráfico de barras
   const dadosBarras = calcOrdenado.slice(0, 8).map((c, i) => ({
@@ -216,6 +220,69 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
           <p className="text-xs text-slate-400 mt-1">{loadingCalc ? '—' : calcOrdenado.length} funcionário{calcOrdenado.length !== 1 ? 's' : ''} com produção</p>
         </div>
       </div>
+
+      {/* Lucratividade no período */}
+      {calcOrdenado.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-xl p-5 mb-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-semibold text-slate-900">Lucratividade no período</h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {new Date(filtroAtivo.inicio + 'T00:00:00').toLocaleDateString('pt-BR')} — {new Date(filtroAtivo.fim + 'T00:00:00').toLocaleDateString('pt-BR')}
+              </p>
+            </div>
+            <span className={`inline-flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 rounded-lg ${
+              lucrativa ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+            }`}>
+              {lucrativa
+                ? <TrendingUp size={15} />
+                : <TrendingDown size={15} />
+              }
+              {lucrativa ? 'Positiva' : 'Negativa'}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-xs text-slate-400 mb-1">Receita bruta</p>
+              <p className="text-xl font-bold text-blue-700">{brl(totalCobranca)}</p>
+              <p className="text-xs text-slate-400 mt-0.5">cobrança ao cliente</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 mb-1">Custo M.O.</p>
+              <p className="text-xl font-bold text-slate-700">{brl(totalProducao)}</p>
+              <p className="text-xs text-slate-400 mt-0.5">pagamento aos funcionários</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 mb-1">Margem bruta</p>
+              <p className={`text-xl font-bold ${lucrativa ? 'text-emerald-700' : 'text-red-600'}`}>
+                {lucrativa ? '+' : ''}{brl(margem)}
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">receita − custo M.O.</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 mb-1">Margem %</p>
+              <p className={`text-xl font-bold ${lucrativa ? 'text-emerald-700' : 'text-red-600'}`}>
+                {margemPct >= 0 ? '+' : ''}{margemPct.toFixed(1)}%
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">sobre receita bruta</p>
+            </div>
+          </div>
+          {/* Barra visual receita vs custo */}
+          <div className="mt-4">
+            <div className="flex items-center gap-2 text-xs text-slate-400 mb-1.5">
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" /> Receita</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-slate-300 inline-block" /> Custo M.O.</span>
+            </div>
+            <div className="relative w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+              <div className="absolute left-0 top-0 h-full bg-blue-400 rounded-full" style={{ width: '100%' }} />
+              <div
+                className="absolute left-0 top-0 h-full bg-slate-400 rounded-full"
+                style={{ width: totalCobranca > 0 ? `${Math.min(100, (totalProducao / totalCobranca) * 100)}%` : '0%' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Linha temporal + destaque top performer */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">

@@ -67,3 +67,12 @@ export async function handleMudarStatusObra(request: FastifyRequest<{ Params: { 
     return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
   }
 }
+
+export async function handleResumoObras(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const resumo = await obrasService.resumoTodasObras(request.usuario.empresa_id)
+    return reply.send({ data: resumo })
+  } catch (err: any) {
+    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  }
+}

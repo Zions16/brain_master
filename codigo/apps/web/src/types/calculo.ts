@@ -6,6 +6,7 @@ export interface CalculoPagamento {
   periodo_fim: string
   total_medicoes: number
   valor_total: number
+  valor_cobranca_total: number
   por_servico: Array<{
     servico_id: string
     servico_nome: string

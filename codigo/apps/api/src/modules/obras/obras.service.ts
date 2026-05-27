@@ -1,6 +1,6 @@
 import { supabase } from '../../lib/supabase'
 import { CriarObraInput, EditarObraInput, MudarStatusObraInput } from '@brain-master/validators'
-import { Obra } from '@brain-master/shared/tipos'
+import { Obra, ObraResumo } from '@brain-master/shared/tipos'
 
 export async function listarObras(empresaId: string): Promise<Obra[]> {
   const { data, error } = await supabase
@@ -86,4 +86,64 @@ export async function mudarStatusObra(id: string, input: MudarStatusObraInput, e
 
   if (error || !data) throw { statusCode: 500, message: 'Erro ao mudar status da obra' }
   return data as Obra
+}
+
+export async function resumoTodasObras(empresaId: string): Promise<ObraResumo[]> {
+  const { data: obras, error } = await supabase
+    .from('obra')
+    .select('*')
+    .eq('empresa_id', empresaId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw { statusCode: 500, message: 'Erro ao listar obras' }
+
+  const resultado: ObraResumo[] = []
+
+  for (const obra of (obras as Obra[]) ?? []) {
+    const [pagResult, medResult] = await Promise.all([
+      supabase.from('pagamento').select('valor_total, status').eq('obra_id', obra.id),
+      supabase
+        .from('medicao')
+        .select('funcionario_id, valor_calculado, valor_cobranca_calculado')
+        .eq('obra_id', obra.id)
+        .eq('status', 'ativa'),
+    ])
+
+    const pags = pagResult.data ?? []
+    const meds = medResult.data ?? []
+
+    const totalPago = pags
+      .filter((p) => p.status === 'realizado')
+      .reduce((s, p) => s + Number(p.valor_total), 0)
+
+    const totalPendente = pags
+      .filter((p) => p.status === 'pendente')
+      .reduce((s, p) => s + Number(p.valor_total), 0)
+
+    const totalCustoProducao = meds.reduce((s, m) => s + Number((m as any).valor_calculado ?? 0), 0)
+    const totalCobrancaProducao = meds.reduce((s, m) => s + Number((m as any).valor_cobranca_calculado ?? 0), 0)
+
+    const funcUnicos = new Set(meds.map((m) => m.funcionario_id)).size
+
+    let progressoPct: number | null = null
+    if (obra.data_inicio && obra.data_prev_fim) {
+      const inicio = new Date(obra.data_inicio).getTime()
+      const fim = new Date(obra.data_prev_fim).getTime()
+      const hoje = Date.now()
+      progressoPct = Math.min(100, Math.max(0, Math.round(((hoje - inicio) / (fim - inicio)) * 100)))
+    }
+
+    resultado.push({
+      ...(obra as Obra),
+      total_pago: Number(totalPago.toFixed(2)),
+      total_pendente: Number(totalPendente.toFixed(2)),
+      total_medicoes: meds.length,
+      total_funcionarios: funcUnicos,
+      progresso_pct: progressoPct,
+      total_custo_producao: Number(totalCustoProducao.toFixed(2)),
+      total_cobranca_producao: Number(totalCobrancaProducao.toFixed(2)),
+    })
+  }
+
+  return resultado
 }
