@@ -18,13 +18,18 @@ export interface ProducaoResult {
   }>
 }
 
-export async function listarFuncionarios(empresaId: string): Promise<Funcionario[]> {
-  const { data, error } = await supabase
+export async function listarFuncionarios(empresaId: string, obraId?: string): Promise<Funcionario[]> {
+  let query = supabase
     .from('funcionario')
     .select('*')
     .eq('empresa_id', empresaId)
     .order('nome', { ascending: true })
 
+  if (obraId) {
+    query = query.or(`obra_id.eq.${obraId},obra_id.is.null`)
+  }
+
+  const { data, error } = await query
   if (error) throw { statusCode: 500, message: 'Erro ao listar funcionários' }
   return data as Funcionario[]
 }

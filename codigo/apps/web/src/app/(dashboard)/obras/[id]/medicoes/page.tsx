@@ -35,8 +35,8 @@ async function fetchServicos(obraId: string): Promise<Servico[]> {
   return data
 }
 
-async function fetchFuncionarios(): Promise<Funcionario[]> {
-  const { data } = await api.get('/api/v1/funcionarios')
+async function fetchFuncionarios(obraId: string): Promise<Funcionario[]> {
+  const { data } = await api.get('/api/v1/funcionarios', { params: { obra_id: obraId } })
   return data
 }
 
@@ -120,8 +120,8 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
   })
 
   const { data: funcionarios } = useQuery({
-    queryKey: ['funcionarios'],
-    queryFn: fetchFuncionarios,
+    queryKey: ['funcionarios', id],
+    queryFn: () => fetchFuncionarios(id),
     enabled: formAberto,
   })
 

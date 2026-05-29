@@ -2,9 +2,15 @@ import { FastifyRequest, FastifyReply } from 'fastify'
 import { criarFuncionarioSchema, editarFuncionarioSchema, producaoQuerySchema } from '@brain-master/validators'
 import * as funcionariosService from './funcionarios.service'
 
-export async function handleListarFuncionarios(request: FastifyRequest, reply: FastifyReply) {
+export async function handleListarFuncionarios(
+  request: FastifyRequest<{ Querystring: { obra_id?: string } }>,
+  reply: FastifyReply,
+) {
   try {
-    const funcionarios = await funcionariosService.listarFuncionarios(request.usuario.empresa_id)
+    const funcionarios = await funcionariosService.listarFuncionarios(
+      request.usuario.empresa_id,
+      request.query.obra_id,
+    )
     return reply.send({ data: funcionarios })
   } catch (err: any) {
     return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })

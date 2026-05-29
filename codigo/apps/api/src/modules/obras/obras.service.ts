@@ -2,6 +2,13 @@ import { supabase } from '../../lib/supabase'
 import { CriarObraInput, EditarObraInput, MudarStatusObraInput } from '@brain-master/validators'
 import { Obra, ObraResumo } from '@brain-master/shared/tipos'
 
+export interface MembroObra {
+  id: string
+  nome: string
+  perfil: string
+  token_acesso: string | null
+}
+
 export async function listarObras(empresaId: string): Promise<Obra[]> {
   const { data, error } = await supabase
     .from('obra')
@@ -29,6 +36,7 @@ export async function listarMinhasObras(usuarioId: string, empresaId: string): P
     .select('*')
     .eq('empresa_id', empresaId)
     .in('id', obraIds)
+    .neq('status', 'encerrada')
     .order('created_at', { ascending: false })
 
   if (error) throw { statusCode: 500, message: 'Erro ao listar obras vinculadas' }
@@ -86,6 +94,63 @@ export async function mudarStatusObra(id: string, input: MudarStatusObraInput, e
 
   if (error || !data) throw { statusCode: 500, message: 'Erro ao mudar status da obra' }
   return data as Obra
+}
+
+export async function listarMembros(obraId: string, empresaId: string): Promise<MembroObra[]> {
+  await buscarObra(obraId, empresaId)
+
+  const { data, error } = await supabase
+    .from('obra_usuario')
+    .select('usuario:usuario_id(id, nome, perfil, token_acesso)')
+    .eq('obra_id', obraId)
+
+  if (error) throw { statusCode: 500, message: 'Erro ao listar membros da obra' }
+  return ((data ?? []).map((row: any) => row.usuario)) as MembroObra[]
+}
+
+export async function adicionarMembro(
+  obraId: string,
+  usuarioId: string,
+  empresaId: string,
+): Promise<void> {
+  await buscarObra(obraId, empresaId)
+
+  const { data: usuario, error: userError } = await supabase
+    .from('usuario')
+    .select('id')
+    .eq('id', usuarioId)
+    .eq('empresa_id', empresaId)
+    .eq('perfil', 'ENGENHEIRO')
+    .single()
+
+  if (userError || !usuario) {
+    throw { statusCode: 400, message: 'Engenheiro não encontrado nesta empresa' }
+  }
+
+  const { error } = await supabase
+    .from('obra_usuario')
+    .insert({ obra_id: obraId, usuario_id: usuarioId })
+
+  if (error) {
+    if (error.code === '23505') throw { statusCode: 409, message: 'Engenheiro já vinculado a esta obra' }
+    throw { statusCode: 500, message: 'Erro ao vincular engenheiro à obra' }
+  }
+}
+
+export async function removerMembro(
+  obraId: string,
+  usuarioId: string,
+  empresaId: string,
+): Promise<void> {
+  await buscarObra(obraId, empresaId)
+
+  const { error } = await supabase
+    .from('obra_usuario')
+    .delete()
+    .eq('obra_id', obraId)
+    .eq('usuario_id', usuarioId)
+
+  if (error) throw { statusCode: 500, message: 'Erro ao remover engenheiro da obra' }
 }
 
 export async function resumoTodasObras(empresaId: string): Promise<ObraResumo[]> {

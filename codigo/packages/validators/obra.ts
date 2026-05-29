@@ -23,6 +23,11 @@ export const mudarStatusObraSchema = z.object({
   }),
 })
 
+export const adicionarMembroSchema = z.object({
+  usuario_id: z.string().uuid({ message: 'ID de usuário inválido' }),
+})
+
 export type CriarObraInput = z.infer<typeof criarObraSchema>
 export type EditarObraInput = z.infer<typeof editarObraSchema>
 export type MudarStatusObraInput = z.infer<typeof mudarStatusObraSchema>
+export type AdicionarMembroInput = z.infer<typeof adicionarMembroSchema>

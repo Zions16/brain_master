@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
-import { criarObraSchema, editarObraSchema, mudarStatusObraSchema } from '@brain-master/validators'
+import { criarObraSchema, editarObraSchema, mudarStatusObraSchema, adicionarMembroSchema } from '@brain-master/validators'
 import * as obrasService from './obras.service'
 
 export async function handleListarObras(request: FastifyRequest, reply: FastifyReply) {
@@ -72,6 +72,46 @@ export async function handleResumoObras(request: FastifyRequest, reply: FastifyR
   try {
     const resumo = await obrasService.resumoTodasObras(request.usuario.empresa_id)
     return reply.send({ data: resumo })
+  } catch (err: any) {
+    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  }
+}
+
+export async function handleListarMembros(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  try {
+    const membros = await obrasService.listarMembros(request.params.id, request.usuario.empresa_id)
+    return reply.send({ data: membros })
+  } catch (err: any) {
+    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  }
+}
+
+export async function handleAdicionarMembro(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  const body = adicionarMembroSchema.safeParse(request.body)
+  if (!body.success) {
+    return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: body.error.errors[0]?.message ?? 'Dados inválidos' })
+  }
+  try {
+    await obrasService.adicionarMembro(request.params.id, body.data.usuario_id, request.usuario.empresa_id)
+    return reply.status(201).send({ data: null, message: 'Engenheiro vinculado com sucesso' })
+  } catch (err: any) {
+    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  }
+}
+
+export async function handleRemoverMembro(
+  request: FastifyRequest<{ Params: { id: string; userId: string } }>,
+  reply: FastifyReply,
+) {
+  try {
+    await obrasService.removerMembro(request.params.id, request.params.userId, request.usuario.empresa_id)
+    return reply.status(204).send()
   } catch (err: any) {
     return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
   }
