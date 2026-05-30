@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
-import { criarMedicaoSchema, corrigirMedicaoSchema, cancelarMedicaoSchema } from '@brain-master/validators'
+import { criarMedicaoSchema, corrigirMedicaoSchema, cancelarMedicaoSchema, aprovarMedicaoSchema } from '@brain-master/validators'
 import * as medicoesService from './medicoes.service'
 
 type ObraParams = { obraId: string }
@@ -61,12 +61,17 @@ export async function handleCorrigirMedicao(request: FastifyRequest<{ Params: Me
 }
 
 export async function handleAprovarMedicao(request: FastifyRequest<{ Params: MedicaoParams }>, reply: FastifyReply) {
+  const body = aprovarMedicaoSchema.safeParse(request.body ?? {})
+  if (!body.success) {
+    return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: body.error.errors[0]?.message ?? 'Dados inválidos' })
+  }
   try {
     const medicao = await medicoesService.aprovarMedicao(
       request.params.id,
       request.params.obraId,
       request.usuario.empresa_id,
       request.usuario.id,
+      body.data.observacao_gestor,
     )
     return reply.send({ data: medicao })
   } catch (err: any) {

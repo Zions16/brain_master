@@ -48,8 +48,10 @@ async function criarMedicao(
   return data
 }
 
-async function aprovarMedicao(obraId: string, medicaoId: string): Promise<Medicao> {
-  const { data } = await api.patch(`/api/v1/obras/${obraId}/medicoes/${medicaoId}/aprovar`)
+async function aprovarMedicao(obraId: string, medicaoId: string, observacaoGestor?: string): Promise<Medicao> {
+  const { data } = await api.patch(`/api/v1/obras/${obraId}/medicoes/${medicaoId}/aprovar`, {
+    observacao_gestor: observacaoGestor || undefined,
+  })
   return data
 }
 
@@ -98,9 +100,18 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
   const [cancelando, setCancelando] = useState<string | null>(null)
   const [motivoCancel, setMotivoCancel] = useState('')
 
+  // Aprovar emergência inline
+  const [aprovandoEmergencia, setAprovandoEmergencia] = useState<Medicao | null>(null)
+  const [obsGestor, setObsGestor] = useState('')
+
   const { mutate: aprovar, isPending: aprovando } = useMutation({
-    mutationFn: (medicaoId: string) => aprovarMedicao(id, medicaoId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['medicoes', id] }),
+    mutationFn: ({ medicaoId, observacaoGestor }: { medicaoId: string; observacaoGestor?: string }) =>
+      aprovarMedicao(id, medicaoId, observacaoGestor),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['medicoes', id] })
+      setAprovandoEmergencia(null)
+      setObsGestor('')
+    },
   })
 
   const { mutate: cancelar, isPending: cancelaEm } = useMutation({
@@ -519,7 +530,14 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
                         <div className="flex items-center justify-end gap-1.5">
                           {(m.status === 'pendente_aprovacao' || m.status === 'pendente') && (
                             <button
-                              onClick={() => aprovar(m.id)}
+                              onClick={() => {
+                                if (m.status === 'pendente_aprovacao') {
+                                  setAprovandoEmergencia(m)
+                                  setObsGestor('')
+                                } else {
+                                  aprovar({ medicaoId: m.id })
+                                }
+                              }}
                               disabled={aprovando}
                               className="flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50"
                             >
@@ -540,6 +558,53 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
                       </td>
                     )}
                   </tr>
+                  {/* Painel de aprovação de emergência inline */}
+                  {aprovandoEmergencia?.id === m.id && (
+                    <tr key={`aprovar-emergencia-${m.id}`}>
+                      <td colSpan={isGestor ? 7 : isEngenheiro ? 5 : 6} className="px-5 py-4 bg-amber-50 border-t border-amber-200">
+                        <div className="space-y-3">
+                          {aprovandoEmergencia.observacao && (
+                            <div className="flex gap-2.5 bg-amber-100 border border-amber-300 rounded-lg px-3.5 py-3">
+                              <AlertTriangle size={16} className="text-amber-600 mt-0.5 shrink-0" />
+                              <div>
+                                <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-0.5">Justificativa da emergência</p>
+                                <p className="text-sm text-amber-900">{aprovandoEmergencia.observacao}</p>
+                              </div>
+                            </div>
+                          )}
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+                              Observação do gestor (opcional)
+                            </label>
+                            <input
+                              autoFocus={!aprovandoEmergencia.observacao}
+                              type="text"
+                              placeholder="Ex: Aprovado após verificação no canteiro"
+                              value={obsGestor}
+                              onChange={(e) => setObsGestor(e.target.value)}
+                              className="w-full border border-amber-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              disabled={aprovando}
+                              onClick={() => aprovar({ medicaoId: m.id, observacaoGestor: obsGestor || undefined })}
+                              className="flex items-center gap-1.5 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 px-3.5 py-1.5 rounded-lg transition-colors"
+                            >
+                              <CheckCircle size={12} />
+                              {aprovando ? 'Aprovando...' : 'Confirmar aprovação'}
+                            </button>
+                            <button
+                              onClick={() => { setAprovandoEmergencia(null); setObsGestor('') }}
+                              className="text-xs text-slate-500 hover:text-slate-700 px-2.5 py-1.5 rounded-lg hover:bg-amber-100 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                   {/* Painel de cancelamento inline */}
                   {cancelando === m.id && (
                     <tr key={`cancel-${m.id}`}>

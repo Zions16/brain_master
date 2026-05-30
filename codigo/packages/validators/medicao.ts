@@ -33,6 +33,11 @@ export const cancelarMedicaoSchema = z.object({
     .max(500),
 })
 
+export const aprovarMedicaoSchema = z.object({
+  observacao_gestor: z.string().max(500).optional(),
+})
+
 export type CriarMedicaoInput = z.infer<typeof criarMedicaoSchema>
 export type CorrigirMedicaoInput = z.infer<typeof corrigirMedicaoSchema>
 export type CancelarMedicaoInput = z.infer<typeof cancelarMedicaoSchema>
+export type AprovarMedicaoInput = z.infer<typeof aprovarMedicaoSchema>

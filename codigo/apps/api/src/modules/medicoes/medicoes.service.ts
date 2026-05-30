@@ -199,14 +199,16 @@ export async function aprovarMedicao(
   obraId: string,
   empresaId: string,
   usuarioId: string,
+  observacaoGestor?: string,
 ): Promise<Medicao> {
   const medicao = await buscarMedicaoComVerificacao(id, obraId, empresaId)
 
-  if (medicao.status !== 'pendente') {
+  if (medicao.status !== 'pendente' && medicao.status !== 'pendente_aprovacao') {
     throw { statusCode: 400, message: `Medição não pode ser aprovada — status atual: ${medicao.status}` }
   }
 
-  await gravarHistorico(id, usuarioId, 'status', 'pendente', 'ativa', 'Medição aprovada')
+  const motivo = observacaoGestor ? `Medição aprovada. Obs: ${observacaoGestor}` : 'Medição aprovada'
+  await gravarHistorico(id, usuarioId, 'status', medicao.status, 'ativa', motivo)
 
   const { data, error } = await supabase
     .from('medicao')
