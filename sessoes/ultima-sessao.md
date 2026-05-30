@@ -51,6 +51,14 @@ Parte A implementada. TypeScript compila sem erro (API e Web).
 - `apps/api/src/modules/funcionarios/funcionarios.controller.ts` — querystring obra_id
 - `apps/web/src/app/(dashboard)/obras/[id]/medicoes/page.tsx` — fetchFuncionarios com obraId
 
+## Bug identificado (não corrigido ainda)
+**Arquivo:** `apps/api/src/modules/medicoes/medicoes.service.ts` linha 205
+**Problema:** `aprovarMedicao` só aceita `status === 'pendente'` mas medições de emergência chegam com `pendente_aprovacao` — botão "Aprovar" no frontend falha silenciosamente para emergências.
+**Fix:** mudar condição para aceitar ambos os status (`pendente` e `pendente_aprovacao`).
+**Escopo adicional pendente de definição:** usuária quer fluxo mais completo para emergências (gestor ver observação do engenheiro em destaque ao aprovar, possivelmente adicionar justificativa). Clarificação não concluída — iniciar próxima sessão perguntando como deve funcionar o fluxo de ponta a ponta.
+
 ## Próxima ação (EXATA)
-- Commitar Sprint 13 (Partes A, B e C)
-- Avaliar Parte D (funcionário multi-obra) ou Parte E (solicitar serviço) para sprint seguinte
+Sprint 14 — Fluxo de emergência completo:
+1. Corrigir bug: `aprovarMedicao` aceitar `pendente_aprovacao`
+2. Definir com usuária o fluxo completo (engenheiro registra → gestor vê → gestor aprova com ou sem justificativa)
+3. Implementar após alinhamento
