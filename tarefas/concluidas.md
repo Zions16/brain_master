@@ -26,3 +26,4 @@
 | 2026-05-22 | Sprint 3 | CRUD de obras: listar, listar/minhas, criar, buscar, editar, mudar status — testado e funcionando | ✓ |
 | 2026-05-22 | Sprint 4 | CRUD de funcionários + cálculo de produção por período; bugfix listarMinhasObras e refresh | ✓ |
 | 2026-05-22 | Sprint 5 | Serviços (CRUD) + Medições (registrar/corrigir/aprovar/cancelar/historico); bugfix session pollution + obra_vinculada | ✓ |
+| 2026-06-01 | Sprint 15 | Fix realizar pagamento (body obrigatório) + painel inline confirmação + breakdown por serviço no calcular | ✓ |
