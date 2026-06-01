@@ -27,3 +27,4 @@
 | 2026-05-22 | Sprint 4 | CRUD de funcionários + cálculo de produção por período; bugfix listarMinhasObras e refresh | ✓ |
 | 2026-05-22 | Sprint 5 | Serviços (CRUD) + Medições (registrar/corrigir/aprovar/cancelar/historico); bugfix session pollution + obra_vinculada | ✓ |
 | 2026-06-01 | Sprint 15 | Fix realizar pagamento (body obrigatório) + painel inline confirmação + breakdown por serviço no calcular | ✓ |
+| 2026-06-01 | Sprint 16 | Tela funcionário completa: endpoint pagamentos + seletor de período + KPI recebido + seção meus pagamentos | ✓ |
