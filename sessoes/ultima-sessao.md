@@ -4,50 +4,56 @@
 2026-06-01
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 16 — Tela do Funcionário (Minha Produção completa)
+Fase 1 — Sprint 17 — RLS Check Completo (Auditoria de Segurança)
 
 ## O que foi feito
 
-**API — novo endpoint:**
-- `funcionarios.service.ts` — `listarPagamentosDoFuncionario`: busca todos os pagamentos do funcionário, ordenados por mais recente
-- `funcionarios.controller.ts` — `handleListarPagamentosDoFuncionario`
-- `funcionarios.routes.ts` — `GET /:id/pagamentos` registrado antes de `/:id` (sem conflito de params); autorizado para GESTOR, ENGENHEIRO e FUNCIONARIO
+**Auditoria via Supabase MCP + SQL direto:**
+- 9 tabelas auditadas — todas com RLS ativo ✅
+- 5 problemas encontrados e corrigidos
+- 1 ação manual documentada (senha vazada)
 
-**Web — `/minha-producao/page.tsx` atualizado:**
-- Seletor de período: botões ‹ › navegam mês a mês; mês futuro bloqueado; `periodo_inicio/fim` calculados dinamicamente
-- KPI "Total recebido": soma dos pagamentos com `status=realizado` (todos os tempos, não só do mês)
-- KPI "Serviços" movido para 4ª coluna — grid agora 4 colunas
-- Seção "Meus pagamentos": tabela com período, forma, data, valor e status ("Recebido" / "Pendente")
-- Produção e medições continuam respondendo ao período selecionado
+**Correções aplicadas (migration 20260601_sprint17_rls_security_audit.sql):**
+
+1. **search_path corrigido** nas 3 funções auxiliares (`get_meu_perfil`, `get_minha_empresa`, `obra_vinculada`) — adicionado `SET search_path = public` para prevenir schema injection
+
+2. **REVOKE anon** — funções SECURITY DEFINER não mais acessíveis sem autenticação via `/rest/v1/rpc/`
+
+3. **Policy duplicada removida — `empresa`** — `empresa: usuario ve a propria` (inline subquery) era redundante com `empresa: ve a propria` (usa get_minha_empresa)
+
+4. **Policy duplicada removida — `usuario`** — `usuario: atualiza proprio` era cópia exata de `usuario: atualiza proprio registro`
+
+5. **`pagamento: funcionario ve o proprio` corrigida** — antes: FUNCIONARIO via via pagamentos de TODOS os funcionários da empresa; agora: só vê os próprios, filtrado por `lower(trim(funcionario.nome)) = lower(trim(usuario.nome))`
+
+**Advisors restantes (esperados/aceitáveis):**
+- `authenticated_security_definer_function_executable` — as próprias policies RLS chamam essas funções; `authenticated` precisa ter EXECUTE para que as policies funcionem. Não pode ser revogado.
+- `auth_leaked_password_protection` — ação manual no dashboard Supabase (ver próxima ação)
 
 ## Arquivos alterados
-- `apps/api/src/modules/funcionarios/funcionarios.service.ts` — listarPagamentosDoFuncionario
-- `apps/api/src/modules/funcionarios/funcionarios.controller.ts` — handler correspondente
-- `apps/api/src/modules/funcionarios/funcionarios.routes.ts` — nova rota GET /:id/pagamentos
-- `apps/web/src/app/(dashboard)/minha-producao/page.tsx` — seletor de período + KPI recebido + seção pagamentos
+- `supabase/migrations/20260601_sprint17_rls_security_audit.sql` — criado com o SQL da migration
 
 ## Decisões técnicas
-- `totalRecebido` calculado client-side (soma de todos pagamentos realizados, sem filtro de período) — o funcionário quer ver o total histórico, não só do mês selecionado
-- `fetchMeusPagamentos` sem parâmetro de período — consistência com a expectativa do trabalhador de campo: "tudo que já recebi"
-- Medições continuam sem filtro de período no endpoint (retorna últimas 60) — suficiente para MVP
+- FUNCIONARIO policy por nome (nome do `funcionario` = nome do `usuario` logado) — pragmático para MVP; limitação conhecida: nomes devem ser iguais (case-insensitive). Solução definitiva seria adicionar `usuario_id` na tabela `funcionario` (fase futura).
+- Não revogado EXECUTE de `authenticated` — quebaria RLS policies em cascata
 
 ## Onde parou
-Sprint 16 concluído. TypeScript compila sem erros (API e Web).
+Sprint 17 concluído. Migration aplicada e verificada no banco.
 
 ## Próxima ação (EXATA)
+1. **Ação manual no dashboard Supabase:**
+   - Authentication → Settings → Enable "Leaked Password Protection" (HaveIBeenPwned)
+
+2. **Commit:**
 ```bash
-git add apps/api/src/modules/funcionarios/funcionarios.service.ts
-git add apps/api/src/modules/funcionarios/funcionarios.controller.ts
-git add apps/api/src/modules/funcionarios/funcionarios.routes.ts
-git add "apps/web/src/app/(dashboard)/minha-producao/page.tsx"
-git commit -m "feat(funcionario): tela minha-producao completa — pagamentos, seletor de período e KPI recebido"
+git add supabase/migrations/20260601_sprint17_rls_security_audit.sql
+git commit -m "security(rls): fix search_path + revoke anon + remove duplicate policies + fix pagamento funcionario"
 git push origin main
 ```
 
-Depois: definir Sprint 17 — candidatos:
-- RLS check completo (auditoria de segurança antes do onboarding)
+Depois: definir Sprint 18 — candidatos:
 - Dashboard multiobra (KPIs consolidados para gestores com mais de uma obra)
-- Testes de integração (medição → pagamento → visualização pelo funcionário)
+- Testes de integração (fluxo completo medição → pagamento → funcionário)
+- Onboarding dos primeiros clientes piloto
 
 ## Commit
 pendente
