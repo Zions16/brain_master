@@ -1,11 +1,11 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
-import { BarChart2, User, Banknote, CheckCircle, Clock } from 'lucide-react'
+import { BarChart2, User, Banknote, CheckCircle, Clock, ChevronLeft, ChevronRight, Wallet } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { useAuthStore } from '@/store/auth'
-import type { Funcionario, Medicao } from '@brain-master/shared/tipos'
+import type { Funcionario, Medicao, Pagamento } from '@brain-master/shared/tipos'
 import type { ProducaoResult } from '@/types/producao'
 
 const STATUS_LABEL: Record<string, string> = {
@@ -23,29 +23,44 @@ const STATUS_CLASS: Record<string, string> = {
   pendente_aprovacao: 'bg-orange-100 text-orange-700',
 }
 
-const hoje = new Date().toISOString().split('T')[0]
-const primeiroDiaMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
+function primeiroDia(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]
+}
+function ultimoDia(d: Date) {
+  const ultimo = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+  const hoje = new Date()
+  return (ultimo > hoje ? hoje : ultimo).toISOString().split('T')[0]
+}
+function isMesAtual(d: Date) {
+  const hoje = new Date()
+  return d.getFullYear() === hoje.getFullYear() && d.getMonth() === hoje.getMonth()
+}
 
 async function fetchMeuPerfil(): Promise<Funcionario | null> {
   const { data } = await api.get('/api/v1/funcionarios/me')
   return data
 }
-
 async function fetchProducao(id: string, inicio: string, fim: string): Promise<ProducaoResult> {
   const { data } = await api.get(`/api/v1/funcionarios/${id}/producao`, { params: { inicio, fim } })
   return data
 }
-
 async function fetchMedicoes(id: string): Promise<(Medicao & { obra?: { id: string; nome: string } })[]> {
   const { data } = await api.get(`/api/v1/funcionarios/${id}/medicoes`)
+  return data
+}
+async function fetchMeusPagamentos(id: string): Promise<Pagamento[]> {
+  const { data } = await api.get(`/api/v1/funcionarios/${id}/pagamentos`)
   return data
 }
 
 export default function MinhaProducaoPage() {
   const usuario = useAuthStore((s) => s.usuario)
   const [funcionarioId, setFuncionarioId] = useState<string | null>(null)
+  const [mesReferencia, setMesReferencia] = useState(() => new Date())
 
-  // Persiste o vínculo no localStorage para não pedir toda vez
+  const inicio = primeiroDia(mesReferencia)
+  const fim = ultimoDia(mesReferencia)
+
   useEffect(() => {
     const saved = localStorage.getItem('bm_meu_funcionario_id')
     if (saved) setFuncionarioId(saved)
@@ -58,7 +73,6 @@ export default function MinhaProducaoPage() {
     retry: false,
   })
 
-  // Auto-vincula se encontrou por nome
   useEffect(() => {
     if (meuPerfil?.id && !funcionarioId) {
       setFuncionarioId(meuPerfil.id)
@@ -66,24 +80,42 @@ export default function MinhaProducaoPage() {
     }
   }, [meuPerfil, funcionarioId])
 
-  const fidFinal = funcionarioId ?? meuPerfil?.id ?? null
+  const fid = funcionarioId ?? meuPerfil?.id ?? null
 
   const { data: producao, isLoading: carregandoProducao } = useQuery({
-    queryKey: ['minha-producao', fidFinal, primeiroDiaMes, hoje],
-    queryFn: () => fetchProducao(fidFinal!, primeiroDiaMes, hoje),
-    enabled: !!fidFinal,
+    queryKey: ['minha-producao', fid, inicio, fim],
+    queryFn: () => fetchProducao(fid!, inicio, fim),
+    enabled: !!fid,
   })
 
   const { data: medicoes, isLoading: carregandoMedicoes } = useQuery({
-    queryKey: ['minhas-medicoes', fidFinal],
-    queryFn: () => fetchMedicoes(fidFinal!),
-    enabled: !!fidFinal,
+    queryKey: ['minhas-medicoes', fid],
+    queryFn: () => fetchMedicoes(fid!),
+    enabled: !!fid,
   })
+
+  const { data: pagamentos, isLoading: carregandoPagamentos } = useQuery({
+    queryKey: ['meus-pagamentos', fid],
+    queryFn: () => fetchMeusPagamentos(fid!),
+    enabled: !!fid,
+  })
+
+  function irMesAnterior() {
+    setMesReferencia((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))
+  }
+  function irProximoMes() {
+    if (!isMesAtual(mesReferencia)) {
+      setMesReferencia((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))
+    }
+  }
+
+  const totalRecebido = pagamentos
+    ?.filter((p) => p.status === 'realizado')
+    .reduce((acc, p) => acc + p.valor_total, 0) ?? 0
 
   if (buscandoPerfil && !funcionarioId) return <LoadingSpinner />
 
-  // Perfil não encontrado por nome — pedir que entre em contato com o gestor
-  if (!buscandoPerfil && !fidFinal) {
+  if (!buscandoPerfil && !fid) {
     return (
       <div className="max-w-md mx-auto mt-10">
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
@@ -100,17 +132,37 @@ export default function MinhaProducaoPage() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Minha Produção</h1>
-        <p className="text-slate-500 text-sm mt-1">Mês atual — {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</p>
+      {/* Header com seletor de período */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Minha Produção</h1>
+          <p className="text-slate-500 text-sm mt-0.5">Acompanhe sua produção e pagamentos</p>
+        </div>
+        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-1 py-1 shadow-sm">
+          <button
+            onClick={irMesAnterior}
+            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="text-sm font-semibold text-slate-800 px-2 min-w-[140px] text-center capitalize">
+            {mesReferencia.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+          </span>
+          <button
+            onClick={irProximoMes}
+            disabled={isMesAtual(mesReferencia)}
+            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
       </div>
 
-      {/* KPIs do mês */}
+      {/* KPIs do período */}
       {carregandoProducao && <LoadingSpinner />}
 
       {producao && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <div className="bg-white border border-slate-200 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">
               <Banknote size={15} className="text-green-500" />
@@ -120,6 +172,17 @@ export default function MinhaProducaoPage() {
               {producao.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </p>
           </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Wallet size={15} className="text-indigo-500" />
+              <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Total recebido</p>
+            </div>
+            <p className="text-2xl font-bold text-indigo-700">
+              {totalRecebido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </p>
+          </div>
+
           <div className="bg-white border border-slate-200 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">
               <BarChart2 size={15} className="text-blue-500" />
@@ -127,17 +190,18 @@ export default function MinhaProducaoPage() {
             </div>
             <p className="text-2xl font-bold text-blue-700">{producao.total_medicoes}</p>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 col-span-2 sm:col-span-1">
+
+          <div className="bg-white border border-slate-200 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">
-              <CheckCircle size={15} className="text-indigo-500" />
+              <CheckCircle size={15} className="text-violet-500" />
               <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Serviços</p>
             </div>
-            <p className="text-2xl font-bold text-indigo-700">{producao.por_servico.length}</p>
+            <p className="text-2xl font-bold text-violet-700">{producao.por_servico.length}</p>
           </div>
         </div>
       )}
 
-      {/* Breakdown por serviço */}
+      {/* Produção por serviço */}
       {producao && producao.por_servico.length > 0 && (
         <div className="bg-white border border-slate-200 rounded-xl p-5 mb-6">
           <h2 className="font-semibold text-slate-900 mb-4">Produção por serviço</h2>
@@ -156,6 +220,58 @@ export default function MinhaProducaoPage() {
           </div>
         </div>
       )}
+
+      {/* Meus pagamentos */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 mb-6">
+        <h2 className="font-semibold text-slate-900 mb-4">Meus pagamentos</h2>
+
+        {carregandoPagamentos && <LoadingSpinner />}
+
+        {pagamentos && pagamentos.length === 0 && (
+          <p className="text-slate-400 text-sm text-center py-6">Nenhum pagamento registrado ainda.</p>
+        )}
+
+        {pagamentos && pagamentos.length > 0 && (
+          <div className="border border-slate-200 rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide">Período</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide hidden sm:table-cell">Forma</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide hidden sm:table-cell">Data</th>
+                  <th className="text-right px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide">Valor</th>
+                  <th className="text-center px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {pagamentos.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3 text-slate-600 text-xs">
+                      {new Date(p.periodo_inicio).toLocaleDateString('pt-BR')} — {new Date(p.periodo_fim).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td className="px-4 py-3 text-slate-500 hidden sm:table-cell">
+                      {p.forma_pagamento ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-slate-500 text-xs hidden sm:table-cell">
+                      {p.data_pagamento ? new Date(p.data_pagamento).toLocaleDateString('pt-BR') : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-slate-900">
+                      {p.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full ${
+                        p.status === 'realizado' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {p.status === 'realizado' ? 'Recebido' : 'Pendente'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Medições recentes */}
       <div className="bg-white border border-slate-200 rounded-xl p-5">

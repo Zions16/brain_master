@@ -1,6 +1,6 @@
 import { supabase } from '../../lib/supabase'
 import { CriarFuncionarioInput, EditarFuncionarioInput } from '@brain-master/validators'
-import { Funcionario, Medicao } from '@brain-master/shared/tipos'
+import { Funcionario, Medicao, Pagamento } from '@brain-master/shared/tipos'
 
 export interface ProducaoResult {
   funcionario_id: string
@@ -113,6 +113,22 @@ export async function listarMedicoesDoFuncionario(
 
   if (error) throw { statusCode: 500, message: 'Erro ao listar medições do funcionário' }
   return data as unknown as Medicao[]
+}
+
+export async function listarPagamentosDoFuncionario(
+  funcionarioId: string,
+  empresaId: string,
+): Promise<Pagamento[]> {
+  await buscarFuncionario(funcionarioId, empresaId)
+
+  const { data, error } = await supabase
+    .from('pagamento')
+    .select('*')
+    .eq('funcionario_id', funcionarioId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw { statusCode: 500, message: 'Erro ao listar pagamentos do funcionário' }
+  return data as Pagamento[]
 }
 
 export async function calcularProducao(

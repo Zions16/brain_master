@@ -79,6 +79,21 @@ export async function handleListarMedicoesDoFuncionario(
   }
 }
 
+export async function handleListarPagamentosDoFuncionario(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  try {
+    const pagamentos = await funcionariosService.listarPagamentosDoFuncionario(
+      request.params.id,
+      request.usuario.empresa_id,
+    )
+    return reply.send({ data: pagamentos })
+  } catch (err: any) {
+    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  }
+}
+
 export async function handleCalcularProducao(
   request: FastifyRequest<{ Params: { id: string }; Querystring: { inicio?: string; fim?: string } }>,
   reply: FastifyReply,
