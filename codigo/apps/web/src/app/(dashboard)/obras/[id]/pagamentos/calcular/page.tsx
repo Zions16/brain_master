@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 
@@ -51,6 +52,15 @@ export default function CalcularPagamentosPage({ params }: { params: { id: strin
   const [calculo, setCalculo] = useState<CalculoItem[] | null>(null)
   const [loadingCalculo, setLoadingCalculo] = useState(false)
   const [erroCalculo, setErroCalculo] = useState('')
+  const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
+
+  function toggleExpandir(funcionarioId: string) {
+    setExpandidos((prev) => {
+      const next = new Set(prev)
+      next.has(funcionarioId) ? next.delete(funcionarioId) : next.add(funcionarioId)
+      return next
+    })
+  }
 
   const { mutate: gerar, isPending: gerando } = useMutation({
     mutationFn: () => gerarPagamentos(id, calculo!, periodoInicio, periodoFim),
@@ -131,35 +141,90 @@ export default function CalcularPagamentosPage({ params }: { params: { id: strin
 
       {calculo && calculo.length > 0 && (
         <>
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-6">
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-4">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Funcionário</th>
-                  <th className="text-right px-4 py-3 font-medium text-slate-600">Medições</th>
-                  <th className="text-right px-4 py-3 font-medium text-slate-600">Valor total</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide w-6"></th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide">Funcionário</th>
+                  <th className="text-right px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide">Medições</th>
+                  <th className="text-right px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide">A receber</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {calculo.map((item) => (
-                  <tr key={item.funcionario_id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-medium">{item.funcionario_nome}</td>
-                    <td className="px-4 py-3 text-right text-slate-600">{item.total_medicoes}</td>
-                    <td className="px-4 py-3 text-right font-semibold">
-                      {item.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </td>
-                  </tr>
+                  <>
+                    <tr
+                      key={item.funcionario_id}
+                      className="hover:bg-slate-50 cursor-pointer"
+                      onClick={() => toggleExpandir(item.funcionario_id)}
+                    >
+                      <td className="px-4 py-3 text-slate-400">
+                        {expandidos.has(item.funcionario_id)
+                          ? <ChevronDown size={14} />
+                          : <ChevronRight size={14} />}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-900">{item.funcionario_nome}</td>
+                      <td className="px-4 py-3 text-right text-slate-500">{item.total_medicoes}</td>
+                      <td className="px-4 py-3 text-right font-bold text-slate-900">
+                        {item.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </td>
+                    </tr>
+
+                    {expandidos.has(item.funcionario_id) && (
+                      <tr key={`${item.funcionario_id}-detalhe`}>
+                        <td colSpan={4} className="bg-slate-50 px-4 py-3 border-t border-slate-100">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="text-slate-500">
+                                <th className="text-left font-medium pb-1.5 pl-4">Serviço</th>
+                                <th className="text-right font-medium pb-1.5">Qtd</th>
+                                <th className="text-left font-medium pb-1.5 pl-1">Un.</th>
+                                <th className="text-right font-medium pb-1.5">Valor</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200">
+                              {item.por_servico.map((s) => (
+                                <tr key={s.servico_id}>
+                                  <td className="py-1.5 pl-4 text-slate-700">{s.servico_nome}</td>
+                                  <td className="py-1.5 text-right text-slate-600">{s.quantidade_total}</td>
+                                  <td className="py-1.5 pl-1 text-slate-400">{s.unidade_medida}</td>
+                                  <td className="py-1.5 text-right font-medium text-slate-700">
+                                    {s.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))}
               </tbody>
+              <tfoot className="border-t-2 border-slate-200 bg-slate-50">
+                <tr>
+                  <td colSpan={2} className="px-4 py-3 text-sm font-semibold text-slate-700">
+                    Total geral ({calculo.length} funcionário{calculo.length !== 1 ? 's' : ''})
+                  </td>
+                  <td className="px-4 py-3 text-right text-sm text-slate-500">
+                    {calculo.reduce((acc, i) => acc + i.total_medicoes, 0)}
+                  </td>
+                  <td className="px-4 py-3 text-right text-sm font-bold text-green-700">
+                    {calculo.reduce((acc, i) => acc + i.valor_total, 0)
+                      .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
 
           <button
             onClick={() => gerar()}
             disabled={gerando}
-            className="bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-sm font-medium px-6 py-2 rounded-lg transition-colors"
+            className="bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-sm font-medium px-6 py-2.5 rounded-lg transition-colors shadow-sm"
           >
-            {gerando ? 'Gerando...' : 'Gerar pagamentos'}
+            {gerando ? 'Gerando...' : `Gerar ${calculo.length} pagamento${calculo.length !== 1 ? 's' : ''}`}
           </button>
         </>
       )}
