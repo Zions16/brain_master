@@ -4,51 +4,58 @@
 2026-06-02
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 21 — Relatório de Fechamento de Período (concluído)
+Fase 1 — RLS Check + Correção (sprint extra entre 21 e 22)
 
 ## O que foi feito
 
-### Backend
-- **`packages/shared/tipos.ts`**: novo tipo `RelatorioFuncionarioFechamento` (funcionario_id, nome, funcao, total_medicoes, total_produzido, total_pendente, total_pago, saldo_a_gerar, obras[])
-- **`relatorios.service.ts`** (novo): `fechamentoPeriodo(empresaId, inicio, fim)` — 4 queries (obras da empresa → medições ativas + pagamentos em paralelo → funcionários batch), agregação em memória, ordenado por total_produzido desc
-- **`relatorios.controller.ts`** (novo): `handleFechamentoPeriodo` com validação de parâmetros ISO
-- **`relatorios.routes.ts`** (novo): `GET /fechamento` (GESTOR, FINANCEIRO)
-- **`app.ts`**: registrado `relatoriosRoutes` em `/api/v1/relatorios`
+### Auditoria RLS
+- Verificadas 9 tabelas: todas com `rowsecurity = true` ✅
+- Verificadas 25 policies: cobertura completa de SELECT/INSERT/UPDATE nas tabelas críticas ✅
+- Verificadas funções helper: `SECURITY DEFINER` + `search_path=public` ✅
+- Sem DELETE em `medicao` e `medicao_historico` ✅
+- `pagamento UPDATE` restrito a `status = 'pendente'` ✅
 
-### Frontend
-- **`fechamento/page.tsx`** (novo): seletor de período, 4 KPIs (total produzido / pendente / pago / saldo a gerar), tabela por funcionário com destaque vermelho para quem tem saldo a gerar, total na tfoot
-- **`Sidebar.tsx`**: item "Fechamento" adicionado para GESTOR e FINANCEIRO
+### Bugs críticos encontrados e corrigidos
+
+**Bug 1 — anon executa funções SECURITY DEFINER**
+O Sprint 17 fez `REVOKE FROM anon`, mas `anon` herda de `public`. A revogação precisa ser `FROM PUBLIC`.
+- Corrigido: `REVOKE FROM PUBLIC` + `GRANT TO authenticated`
+
+**Bug 2 — Vazamento cross-empresa em 3 policies**
+`servico`, `medicao` e `medicao_historico` tinham:
+`USING (obra_vinculada(obra_id) OR get_meu_perfil() IN ('GESTOR','FINANCEIRO'))`
+O `OR` sem filtro de empresa permitia que GESTOR de Empresa A lesse dados de Empresa B.
+- Corrigido: removido o `OR get_meu_perfil()` das 3 policies. `obra_vinculada()` já garante o isolamento.
+
+### Arquivo criado
+`supabase/migrations/20260602_rls_fix_cross_empresa_e_anon.sql`
+
+### Advisories restantes (aceitáveis)
+- `authenticated` pode chamar funções helper via RPC — intencional, usado pelas policies
+- Leaked password protection desabilitado — configurar no dashboard: Authentication → Password Settings
 
 ## Arquivos alterados
-- `codigo/packages/shared/tipos.ts`
-- `codigo/apps/api/src/modules/relatorios/relatorios.service.ts` (novo)
-- `codigo/apps/api/src/modules/relatorios/relatorios.controller.ts` (novo)
-- `codigo/apps/api/src/modules/relatorios/relatorios.routes.ts` (novo)
-- `codigo/apps/api/src/app.ts`
-- `codigo/apps/web/src/app/(dashboard)/fechamento/page.tsx` (novo)
-- `codigo/apps/web/src/components/Sidebar.tsx`
+- `supabase/migrations/20260602_rls_fix_cross_empresa_e_anon.sql` (novo)
+- (migration já aplicada ao banco via MCP)
 
 ## Decisões tomadas
-- `saldo_a_gerar = total_produzido - total_pendente - total_pago` — destaca quem ainda não tem pagamento gerado
-- Pagamentos filtrados por `periodo_inicio >= inicio AND periodo_inicio <= fim` — cobre pagamentos gerados dentro do período
-- Módulo `relatorios` separado de `obras` e `funcionarios` — relatórios cross-entidade têm seu próprio namespace
-- Sem paginação — relatório de fechamento é sempre lido completo
+- REVOKE FROM PUBLIC (não só FROM anon) é o padrão correto no PostgreSQL
+- OR get_meu_perfil() sem empresa check = bug de isolamento multi-tenant
+- Warnings de authenticated executando funções helper = aceitáveis (design intencional)
 
 ## Onde parou
-Sprint 21 concluído. TypeScript limpo em API e Web.
+RLS check concluído. Banco seguro para deploy.
 
 ## Próxima ação (EXATA)
-Commit e push do Sprint 21:
+1. Commitar migration:
 ```bash
-git add codigo/packages/shared/tipos.ts
-git add codigo/apps/api/src/modules/relatorios/
-git add codigo/apps/api/src/app.ts
-git add "codigo/apps/web/src/app/(dashboard)/fechamento/page.tsx"
-git add codigo/apps/web/src/components/Sidebar.tsx
+git add supabase/migrations/20260602_rls_fix_cross_empresa_e_anon.sql
 git add sessoes/ultima-sessao.md
-git commit -m "feat(relatorios): sprint 21 — relatório de fechamento de período cross-obra"
+git commit -m "fix(rls): corrige vazamento cross-empresa e acesso anon a funções SECURITY DEFINER"
 git push origin main
 ```
+2. No dashboard Supabase: Authentication → Password Settings → ativar "Leaked password protection"
+3. Definir Sprint 22 (sugestão: testes de integração ou deploy)
 
 ## Commit
 pendente
