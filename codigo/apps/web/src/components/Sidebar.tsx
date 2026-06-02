@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Building2, Users, LogOut, HardHat, LayoutDashboard, BarChart2, ClipboardCheck } from 'lucide-react'
+import { Building2, Users, LogOut, HardHat, LayoutDashboard, BarChart2, ClipboardCheck, FileText } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import type { Perfil } from '@brain-master/shared/tipos'
 
@@ -11,12 +11,14 @@ const NAV_BY_PERFIL: Record<Perfil, NavItem[]> = {
   GESTOR: [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/aprovacoes', label: 'Aprovações', icon: ClipboardCheck },
+    { href: '/fechamento', label: 'Fechamento', icon: FileText },
     { href: '/obras', label: 'Obras', icon: Building2 },
     { href: '/funcionarios', label: 'Funcionários', icon: Users },
     { href: '/engenheiros', label: 'Engenheiros', icon: HardHat },
   ],
   FINANCEIRO: [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/fechamento', label: 'Fechamento', icon: FileText },
     { href: '/obras', label: 'Obras', icon: Building2 },
   ],
   ENGENHEIRO: [
