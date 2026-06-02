@@ -9,6 +9,7 @@ import { funcionariosRoutes } from './modules/funcionarios/funcionarios.routes'
 import { engenheirosRoutes } from './modules/engenheiros/engenheiros.routes'
 import { servicosRoutes } from './modules/servicos/servicos.routes'
 import { medicoesRoutes } from './modules/medicoes/medicoes.routes'
+import { medicoesGlobalRoutes } from './modules/medicoes/medicoes.global.routes'
 import { pagamentosRoutes } from './modules/pagamentos/pagamentos.routes'
 
 export async function buildApp() {
@@ -29,6 +30,7 @@ export async function buildApp() {
   app.register(engenheirosRoutes, { prefix: '/api/v1/engenheiros' })
   app.register(servicosRoutes, { prefix: '/api/v1/obras' })
   app.register(medicoesRoutes, { prefix: '/api/v1/obras' })
+  app.register(medicoesGlobalRoutes, { prefix: '/api/v1/medicoes' })
   app.register(pagamentosRoutes, { prefix: '/api/v1/obras' })
 
   app.get('/health', async () => ({ status: 'ok' }))

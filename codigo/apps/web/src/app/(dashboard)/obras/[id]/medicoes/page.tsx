@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { ChevronRight, Ruler, Plus, X, Users, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
+import { ChevronRight, Ruler, Plus, X, Users, Info, CheckCircle, XCircle } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { useAuthStore } from '@/store/auth'
@@ -55,6 +55,11 @@ async function aprovarMedicao(obraId: string, medicaoId: string, observacaoGesto
   return data
 }
 
+async function rejeitarMedicao(obraId: string, medicaoId: string, motivo: string): Promise<Medicao> {
+  const { data } = await api.patch(`/api/v1/obras/${obraId}/medicoes/${medicaoId}/rejeitar`, { motivo })
+  return data
+}
+
 async function cancelarMedicao(obraId: string, medicaoId: string, motivo: string): Promise<Medicao> {
   const { data } = await api.patch(`/api/v1/obras/${obraId}/medicoes/${medicaoId}/cancelar`, { motivo })
   return data
@@ -68,7 +73,6 @@ const EMPTY_FORM = {
   quantidade: '',
   data: hoje,
   observacao: '',
-  emergencia: false,
 }
 
 export default function MedicoesPage({ params }: { params: { id: string } }) {
@@ -100,17 +104,31 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
   const [cancelando, setCancelando] = useState<string | null>(null)
   const [motivoCancel, setMotivoCancel] = useState('')
 
-  // Aprovar emergência inline
-  const [aprovandoEmergencia, setAprovandoEmergencia] = useState<Medicao | null>(null)
+  // Aprovar inline
+  const [aprovandoId, setAprovandoId] = useState<Medicao | null>(null)
   const [obsGestor, setObsGestor] = useState('')
+
+  // Rejeitar inline
+  const [rejeitandoId, setRejeitandoId] = useState<string | null>(null)
+  const [motivoRejeitar, setMotivoRejeitar] = useState('')
 
   const { mutate: aprovar, isPending: aprovando } = useMutation({
     mutationFn: ({ medicaoId, observacaoGestor }: { medicaoId: string; observacaoGestor?: string }) =>
       aprovarMedicao(id, medicaoId, observacaoGestor),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['medicoes', id] })
-      setAprovandoEmergencia(null)
+      setAprovandoId(null)
       setObsGestor('')
+    },
+  })
+
+  const { mutate: rejeitar, isPending: rejeitando } = useMutation({
+    mutationFn: ({ medicaoId, motivo }: { medicaoId: string; motivo: string }) =>
+      rejeitarMedicao(id, medicaoId, motivo),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['medicoes', id] })
+      setRejeitandoId(null)
+      setMotivoRejeitar('')
     },
   })
 
@@ -150,7 +168,7 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
   const { mutate: criar, isPending } = useMutation({
     mutationFn: async () => {
       const quantidade = Number(form.quantidade)
-      const payload = { servico_id: form.servico_id, quantidade, data: form.data, observacao: form.observacao || undefined, emergencia: form.emergencia || undefined }
+      const payload = { servico_id: form.servico_id, quantidade, data: form.data, observacao: form.observacao || undefined }
 
       if (modoGrupo) {
         const results = await Promise.allSettled(
@@ -203,6 +221,11 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
     setForm({ ...EMPTY_FORM, data: hoje })
     setGrupoSelecionados([])
     setModoGrupo(false)
+  }
+
+  function fecharAprovar() {
+    setAprovandoId(null)
+    setObsGestor('')
   }
 
   return (
@@ -411,28 +434,14 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
               />
             </div>
 
-            {/* Emergência */}
-            <div className={`mb-4 rounded-xl p-3.5 border transition-colors ${form.emergencia ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200'}`}>
-              <label className="flex items-center gap-3 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={form.emergencia}
-                  onChange={(e) => setForm((f) => ({ ...f, emergencia: e.target.checked }))}
-                  className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400"
-                />
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <AlertTriangle size={13} className={form.emergencia ? 'text-amber-500' : 'text-slate-400'} />
-                    <span className={`text-sm font-semibold ${form.emergencia ? 'text-amber-800' : 'text-slate-700'}`}>
-                      Medição de emergência
-                    </span>
-                  </div>
-                  <p className={`text-xs mt-0.5 ${form.emergencia ? 'text-amber-600' : 'text-slate-400'}`}>
-                    Registra como "aguardando aprovação" — o gestor precisará aprovar antes de contar no pagamento
-                  </p>
-                </div>
-              </label>
-            </div>
+            {isEngenheiro && (
+              <div className="mb-4 flex items-start gap-2.5 bg-blue-50 border border-blue-200 rounded-xl px-3.5 py-3">
+                <Info size={14} className="text-blue-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-blue-700">
+                  Sua medição será enviada para <span className="font-semibold">aprovação do gestor</span> antes de entrar no cálculo de pagamento.
+                </p>
+              </div>
+            )}
 
             {erroForm && (
               <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 mb-4">
@@ -530,14 +539,7 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
                         <div className="flex items-center justify-end gap-1.5">
                           {(m.status === 'pendente_aprovacao' || m.status === 'pendente') && (
                             <button
-                              onClick={() => {
-                                if (m.status === 'pendente_aprovacao') {
-                                  setAprovandoEmergencia(m)
-                                  setObsGestor('')
-                                } else {
-                                  aprovar({ medicaoId: m.id })
-                                }
-                              }}
+                              onClick={() => { setAprovandoId(m); setObsGestor('') }}
                               disabled={aprovando}
                               className="flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50"
                             >
@@ -545,7 +547,16 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
                               Aprovar
                             </button>
                           )}
-                          {m.status !== 'cancelada' && (
+                          {m.status === 'pendente_aprovacao' && (
+                            <button
+                              onClick={() => { setRejeitandoId(m.id); setMotivoRejeitar('') }}
+                              className="flex items-center gap-1 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 px-2.5 py-1 rounded-lg transition-colors"
+                            >
+                              <XCircle size={12} />
+                              Rejeitar
+                            </button>
+                          )}
+                          {m.status !== 'cancelada' && m.status !== 'pendente_aprovacao' && (
                             <button
                               onClick={() => { setCancelando(m.id); setMotivoCancel('') }}
                               className="flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition-colors"
@@ -558,17 +569,17 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
                       </td>
                     )}
                   </tr>
-                  {/* Painel de aprovação de emergência inline */}
-                  {aprovandoEmergencia?.id === m.id && (
-                    <tr key={`aprovar-emergencia-${m.id}`}>
-                      <td colSpan={isGestor ? 7 : isEngenheiro ? 5 : 6} className="px-5 py-4 bg-amber-50 border-t border-amber-200">
+                  {/* Painel de aprovação inline */}
+                  {aprovandoId?.id === m.id && (
+                    <tr key={`aprovar-${m.id}`}>
+                      <td colSpan={isGestor ? 7 : isEngenheiro ? 5 : 6} className="px-5 py-4 bg-emerald-50 border-t border-emerald-200">
                         <div className="space-y-3">
-                          {aprovandoEmergencia.observacao && (
-                            <div className="flex gap-2.5 bg-amber-100 border border-amber-300 rounded-lg px-3.5 py-3">
-                              <AlertTriangle size={16} className="text-amber-600 mt-0.5 shrink-0" />
+                          {aprovandoId.observacao && (
+                            <div className="flex gap-2.5 bg-emerald-100 border border-emerald-200 rounded-lg px-3.5 py-3">
+                              <Info size={14} className="text-emerald-700 mt-0.5 shrink-0" />
                               <div>
-                                <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-0.5">Justificativa da emergência</p>
-                                <p className="text-sm text-amber-900">{aprovandoEmergencia.observacao}</p>
+                                <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wide mb-0.5">Observação do engenheiro</p>
+                                <p className="text-sm text-emerald-900">{aprovandoId.observacao}</p>
                               </div>
                             </div>
                           )}
@@ -577,12 +588,12 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
                               Observação do gestor (opcional)
                             </label>
                             <input
-                              autoFocus={!aprovandoEmergencia.observacao}
+                              autoFocus
                               type="text"
                               placeholder="Ex: Aprovado após verificação no canteiro"
                               value={obsGestor}
                               onChange={(e) => setObsGestor(e.target.value)}
-                              className="w-full border border-amber-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                              className="w-full border border-emerald-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
                             />
                           </div>
                           <div className="flex items-center gap-2">
@@ -595,12 +606,42 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
                               {aprovando ? 'Aprovando...' : 'Confirmar aprovação'}
                             </button>
                             <button
-                              onClick={() => { setAprovandoEmergencia(null); setObsGestor('') }}
-                              className="text-xs text-slate-500 hover:text-slate-700 px-2.5 py-1.5 rounded-lg hover:bg-amber-100 transition-colors"
+                              onClick={fecharAprovar}
+                              className="text-xs text-slate-500 hover:text-slate-700 px-2.5 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors"
                             >
                               Cancelar
                             </button>
                           </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  {/* Painel de rejeição inline */}
+                  {rejeitandoId === m.id && (
+                    <tr key={`rejeitar-${m.id}`}>
+                      <td colSpan={isGestor ? 7 : isEngenheiro ? 5 : 6} className="px-5 py-3 bg-orange-50 border-t border-orange-100">
+                        <div className="flex items-center gap-3">
+                          <input
+                            autoFocus
+                            type="text"
+                            placeholder="Motivo da rejeição (mínimo 10 caracteres)"
+                            value={motivoRejeitar}
+                            onChange={(e) => setMotivoRejeitar(e.target.value)}
+                            className="flex-1 border border-orange-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                          />
+                          <button
+                            disabled={motivoRejeitar.length < 10 || rejeitando}
+                            onClick={() => rejeitar({ medicaoId: m.id, motivo: motivoRejeitar })}
+                            className="text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-colors"
+                          >
+                            Confirmar rejeição
+                          </button>
+                          <button
+                            onClick={() => setRejeitandoId(null)}
+                            className="text-xs text-slate-500 hover:text-slate-700 px-2 py-1.5"
+                          >
+                            Voltar
+                          </button>
                         </div>
                       </td>
                     </tr>

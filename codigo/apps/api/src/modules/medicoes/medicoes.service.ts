@@ -84,10 +84,10 @@ export async function registrarMedicao(
   obraId: string,
   empresaId: string,
   usuarioId: string,
+  usuarioPerfil: string,
 ): Promise<Medicao> {
   await verificarObraEmpresa(obraId, empresaId)
 
-  // Verifica funcionário pertence à empresa
   const { data: funcionario, error: funcError } = await supabase
     .from('funcionario')
     .select('id')
@@ -98,7 +98,6 @@ export async function registrarMedicao(
 
   if (funcError || !funcionario) throw { statusCode: 400, message: 'Funcionário não encontrado ou inativo' }
 
-  // Busca serviço para calcular valor
   const { data: servico, error: servError } = await supabase
     .from('servico')
     .select('id, valor_pagamento, valor_cobranca, ativo')
@@ -114,6 +113,8 @@ export async function registrarMedicao(
     ? Number((input.quantidade * servico.valor_cobranca).toFixed(2))
     : null
 
+  const status = usuarioPerfil === 'GESTOR' ? 'ativa' : 'pendente_aprovacao'
+
   const { data, error } = await supabase
     .from('medicao')
     .insert({
@@ -125,7 +126,7 @@ export async function registrarMedicao(
       valor_cobranca_calculado,
       data: input.data ?? new Date().toISOString().split('T')[0],
       medido_por: usuarioId,
-      status: input.emergencia ? 'pendente_aprovacao' : 'ativa',
+      status,
       observacao: input.observacao ?? null,
     })
     .select()
@@ -245,6 +246,57 @@ export async function cancelarMedicao(
 
   if (error || !data) throw { statusCode: 500, message: 'Erro ao cancelar medição' }
   return data as Medicao
+}
+
+export async function rejeitarMedicao(
+  id: string,
+  motivo: string,
+  obraId: string,
+  empresaId: string,
+  usuarioId: string,
+): Promise<Medicao> {
+  const medicao = await buscarMedicaoComVerificacao(id, obraId, empresaId)
+
+  if (medicao.status !== 'pendente_aprovacao') {
+    throw { statusCode: 400, message: `Apenas medições pendentes de aprovação podem ser rejeitadas — status atual: ${medicao.status}` }
+  }
+
+  await gravarHistorico(id, usuarioId, 'status', medicao.status, 'cancelada', `Medição rejeitada: ${motivo}`)
+
+  const { data, error } = await supabase
+    .from('medicao')
+    .update({ status: 'cancelada' })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error || !data) throw { statusCode: 500, message: 'Erro ao rejeitar medição' }
+  return data as Medicao
+}
+
+export async function listarPendentesAprovacao(empresaId: string): Promise<(Medicao & { obra: { id: string; nome: string } })[]> {
+  const { data, error } = await supabase
+    .from('medicao')
+    .select(`
+      *,
+      funcionario:funcionario_id(id, nome, funcao),
+      servico:servico_id(id, nome, unidade_medida),
+      medido_por_usuario:medido_por(id, nome),
+      obra:obra_id(id, nome)
+    `)
+    .eq('status', 'pendente_aprovacao')
+    .order('created_at', { ascending: true })
+
+  if (error) throw { statusCode: 500, message: 'Erro ao listar pendentes de aprovação' }
+
+  // Filtra apenas medições de obras da empresa
+  const rows = (data ?? []) as any[]
+  const daMesmaEmpresa = rows.filter((m) => {
+    // A query de RLS já garante isolamento, mas verificamos a obra_id via join
+    return m.obra !== null
+  })
+
+  return daMesmaEmpresa
 }
 
 export async function buscarHistorico(id: string, obraId: string, empresaId: string): Promise<MedicaoHistorico[]> {

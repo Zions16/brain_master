@@ -7,6 +7,7 @@ import {
   handleRegistrarMedicao,
   handleCorrigirMedicao,
   handleAprovarMedicao,
+  handleRejeitarMedicao,
   handleCancelarMedicao,
   handleBuscarHistorico,
 } from './medicoes.controller'
@@ -22,6 +23,7 @@ export async function medicoesRoutes(app: FastifyInstance) {
   // rotas estáticas de sub-ação antes de /:id para evitar conflito
   app.patch('/:obraId/medicoes/:id/corrigir', { preHandler: [autorizar('ENGENHEIRO', 'GESTOR')], handler: handleCorrigirMedicao })
   app.patch('/:obraId/medicoes/:id/aprovar', { preHandler: [autorizar('GESTOR')], handler: handleAprovarMedicao })
+  app.patch('/:obraId/medicoes/:id/rejeitar', { preHandler: [autorizar('GESTOR')], handler: handleRejeitarMedicao })
   app.patch('/:obraId/medicoes/:id/cancelar', { preHandler: [autorizar('GESTOR')], handler: handleCancelarMedicao })
   app.get('/:obraId/medicoes/:id/historico', { preHandler: [autorizar('GESTOR', 'ENGENHEIRO')], handler: handleBuscarHistorico })
 
