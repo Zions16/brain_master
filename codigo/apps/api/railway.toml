@@ -1,0 +1,17 @@
+# Railway — Brain Master API (staging)
+# Configuração no dashboard Railway:
+#   1. New Project → Deploy from GitHub repo
+#   2. Settings > Source > Root Directory: /
+#   3. Settings > Build > Builder: Dockerfile
+#   4. Settings > Build > Dockerfile Path: apps/api/Dockerfile
+#   5. Add Variables (ver apps/api/.env.example)
+
+[build]
+builder = "dockerfile"
+dockerfilePath = "apps/api/Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

@@ -1,0 +1,12 @@
+.git
+.gitignore
+node_modules
+**/node_modules
+apps/mobile
+apps/web
+**/.env
+**/.env.local
+**/__tests__
+**/*.test.ts
+*.md
+.turbo
