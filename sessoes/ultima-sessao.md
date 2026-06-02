@@ -4,58 +4,60 @@
 2026-06-02
 
 ## Fase / Sprint atual
-Fase 1 — RLS Check + Correção (sprint extra entre 21 e 22)
+Fase 1 — Sprint 22 — Testes de Integração RLS (pgTAP)
 
 ## O que foi feito
 
-### Auditoria RLS
-- Verificadas 9 tabelas: todas com `rowsecurity = true` ✅
-- Verificadas 25 policies: cobertura completa de SELECT/INSERT/UPDATE nas tabelas críticas ✅
-- Verificadas funções helper: `SECURITY DEFINER` + `search_path=public` ✅
-- Sem DELETE em `medicao` e `medicao_historico` ✅
-- `pagamento UPDATE` restrito a `status = 'pendente'` ✅
+### Infraestrutura de testes
+- Extensão pgTAP instalada no projeto Supabase (`schema extensions`)
+- Criada pasta `supabase/tests/`
+- Criado arquivo `supabase/tests/rls_policies.test.sql`
 
-### Bugs críticos encontrados e corrigidos
+### 12 testes pgTAP — resultado: 12/12 ok
 
-**Bug 1 — anon executa funções SECURITY DEFINER**
-O Sprint 17 fez `REVOKE FROM anon`, mas `anon` herda de `public`. A revogação precisa ser `FROM PUBLIC`.
-- Corrigido: `REVOKE FROM PUBLIC` + `GRANT TO authenticated`
+**Bloco 1 — Bug 1: permissão de execução das funções helper**
+- T01: anon não tem EXECUTE em get_meu_perfil() ✅
+- T02: anon não tem EXECUTE em get_minha_empresa() ✅
+- T03: anon não tem EXECUTE em obra_vinculada(uuid) ✅
+- T04: authenticated tem EXECUTE em get_meu_perfil() ✅
+- T05: authenticated tem EXECUTE em get_minha_empresa() ✅
+- T06: authenticated tem EXECUTE em obra_vinculada(uuid) ✅
 
-**Bug 2 — Vazamento cross-empresa em 3 policies**
-`servico`, `medicao` e `medicao_historico` tinham:
-`USING (obra_vinculada(obra_id) OR get_meu_perfil() IN ('GESTOR','FINANCEIRO'))`
-O `OR` sem filtro de empresa permitia que GESTOR de Empresa A lesse dados de Empresa B.
-- Corrigido: removido o `OR get_meu_perfil()` das 3 policies. `obra_vinculada()` já garante o isolamento.
+**Bloco 2 — Bug 2: isolamento cross-empresa**
+- T07: Gestor Alpha NÃO vê serviço da Empresa Beta ✅
+- T08: Gestor Alpha NÃO vê medição da Empresa Beta ✅
+- T09: Gestor Alpha VÊ sua própria medição (controle positivo) ✅
+- T10: Gestor Beta NÃO vê serviço da Empresa Alpha ✅
+- T11: Gestor Beta NÃO vê medição da Empresa Alpha ✅
+- T12: Gestor Beta VÊ sua própria medição (controle positivo) ✅
 
-### Arquivo criado
-`supabase/migrations/20260602_rls_fix_cross_empresa_e_anon.sql`
+### Técnica usada
+- Testes de permissão via `has_function_privilege()` (sem troca de role)
+- Testes de RLS via `SET LOCAL ROLE authenticated` + `set_config(jwt.claims)` + temp table
+- `ROLLBACK` ao final garante zero persistência de dados de teste
+- Função encapsulada `_run_rls_tests()` para capturar output completo, depois dropada
 
-### Advisories restantes (aceitáveis)
-- `authenticated` pode chamar funções helper via RPC — intencional, usado pelas policies
-- Leaked password protection desabilitado — configurar no dashboard: Authentication → Password Settings
-
-## Arquivos alterados
-- `supabase/migrations/20260602_rls_fix_cross_empresa_e_anon.sql` (novo)
-- (migration já aplicada ao banco via MCP)
+## Arquivos criados ou alterados
+- `supabase/tests/rls_policies.test.sql` (novo)
+- `sessoes/ultima-sessao.md` (este arquivo)
 
 ## Decisões tomadas
-- REVOKE FROM PUBLIC (não só FROM anon) é o padrão correto no PostgreSQL
-- OR get_meu_perfil() sem empresa check = bug de isolamento multi-tenant
-- Warnings de authenticated executando funções helper = aceitáveis (design intencional)
+- `has_function_privilege()` é suficiente para testar permissão de EXECUTE sem trocar de role
+- Temp table com `GRANT TO authenticated` necessária para capturar contagens RLS antes do RESET ROLE
+- Função wrapper para capturar todo o output pgTAP numa única query (MCP retorna só a última linha)
+- Função de teste dropada após execução (não deve ficar em schema public em produção)
 
 ## Onde parou
-RLS check concluído. Banco seguro para deploy.
+Sprint 22 Parte 1 (RLS Tests) concluída. Banco validado com 12/12 testes passando.
 
 ## Próxima ação (EXATA)
-1. Commitar migration:
+Sprint 22 Parte 2: testes de unidade do serviço de medição com Vitest
 ```bash
-git add supabase/migrations/20260602_rls_fix_cross_empresa_e_anon.sql
-git add sessoes/ultima-sessao.md
-git commit -m "fix(rls): corrige vazamento cross-empresa e acesso anon a funções SECURITY DEFINER"
-git push origin main
+cd codigo/apps/api
+npm install -D vitest @vitest/coverage-v8
 ```
-2. No dashboard Supabase: Authentication → Password Settings → ativar "Leaked password protection"
-3. Definir Sprint 22 (sugestão: testes de integração ou deploy)
+Criar `src/modules/medicoes/__tests__/medicoes.service.test.ts`
+Focar em: cálculo de valor, lógica de status por perfil, validações de negócio.
 
 ## Commit
 pendente
