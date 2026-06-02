@@ -4,60 +4,50 @@
 2026-06-02
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 22 — Testes de Integração RLS (pgTAP)
+Fase 1 — Sprint 22 — Testes de Integração (concluído)
 
 ## O que foi feito
 
-### Infraestrutura de testes
-- Extensão pgTAP instalada no projeto Supabase (`schema extensions`)
-- Criada pasta `supabase/tests/`
-- Criado arquivo `supabase/tests/rls_policies.test.sql`
+### Parte 1: RLS Tests (pgTAP) — commit b89dcec
+- Extensão pgTAP instalada no Supabase
+- `supabase/tests/rls_policies.test.sql` criado
+- 12/12 testes passando: Bug 1 (anon sem EXECUTE) + Bug 2 (cross-empresa)
 
-### 12 testes pgTAP — resultado: 12/12 ok
+### Parte 2: Unit Tests do serviço de medição (Vitest) — commit e432438
+- Vitest instalado em `apps/api` (v4.1.8)
+- `apps/api/vitest.config.ts` criado com aliases de path para packages/shared e validators
+- `src/modules/medicoes/__tests__/medicoes.service.test.ts` criado
+- 16/16 testes passando
 
-**Bloco 1 — Bug 1: permissão de execução das funções helper**
-- T01: anon não tem EXECUTE em get_meu_perfil() ✅
-- T02: anon não tem EXECUTE em get_minha_empresa() ✅
-- T03: anon não tem EXECUTE em obra_vinculada(uuid) ✅
-- T04: authenticated tem EXECUTE em get_meu_perfil() ✅
-- T05: authenticated tem EXECUTE em get_minha_empresa() ✅
-- T06: authenticated tem EXECUTE em obra_vinculada(uuid) ✅
-
-**Bloco 2 — Bug 2: isolamento cross-empresa**
-- T07: Gestor Alpha NÃO vê serviço da Empresa Beta ✅
-- T08: Gestor Alpha NÃO vê medição da Empresa Beta ✅
-- T09: Gestor Alpha VÊ sua própria medição (controle positivo) ✅
-- T10: Gestor Beta NÃO vê serviço da Empresa Alpha ✅
-- T11: Gestor Beta NÃO vê medição da Empresa Alpha ✅
-- T12: Gestor Beta VÊ sua própria medição (controle positivo) ✅
-
-### Técnica usada
-- Testes de permissão via `has_function_privilege()` (sem troca de role)
-- Testes de RLS via `SET LOCAL ROLE authenticated` + `set_config(jwt.claims)` + temp table
-- `ROLLBACK` ao final garante zero persistência de dados de teste
-- Função encapsulada `_run_rls_tests()` para capturar output completo, depois dropada
+**Cobertura dos testes de unidade:**
+- `registrarMedicao`: GESTOR→ativa, ENGENHEIRO→pendente_aprovacao, cálculo de valor, serviço inativo, funcionário não encontrado, obra inválida
+- `corrigirMedicao`: recalcula valor_calculado, historico condicional (só grava valor quando muda), throws 400 para medição cancelada
+- `aprovarMedicao`: aprova pendente_aprovacao→ativa, throws 400 para ativa/cancelada
+- `cancelarMedicao`: cancela ativa→cancelada, throws 400 para já cancelada
+- `rejeitarMedicao`: rejeita pendente_aprovacao→cancelada, throws 400 para outros status
 
 ## Arquivos criados ou alterados
 - `supabase/tests/rls_policies.test.sql` (novo)
+- `codigo/apps/api/vitest.config.ts` (novo)
+- `codigo/apps/api/package.json` (scripts test e test:watch adicionados)
+- `codigo/apps/api/src/modules/medicoes/__tests__/medicoes.service.test.ts` (novo)
 - `sessoes/ultima-sessao.md` (este arquivo)
 
 ## Decisões tomadas
-- `has_function_privilege()` é suficiente para testar permissão de EXECUTE sem trocar de role
-- Temp table com `GRANT TO authenticated` necessária para capturar contagens RLS antes do RESET ROLE
-- Função wrapper para capturar todo o output pgTAP numa única query (MCP retorna só a última linha)
-- Função de teste dropada após execução (não deve ficar em schema public em produção)
+- Chain helper com `.then`/`.catch` para tornar o mock diretamente awaitable (sem `.single()`)
+- `vi.mocked(supabase.from)` + `mockReturnValueOnce` em sequência para controlar cada from() call
+- Sem mocks de módulos externos além do `lib/supabase` — testa a lógica pura do serviço
+- path aliases no vitest.config.ts para resolver @brain-master/* sem precisar de build
 
 ## Onde parou
-Sprint 22 Parte 1 (RLS Tests) concluída. Banco validado com 12/12 testes passando.
+Sprint 22 completo. 28 testes no total (12 pgTAP + 16 Vitest), todos passando.
 
 ## Próxima ação (EXATA)
-Sprint 22 Parte 2: testes de unidade do serviço de medição com Vitest
-```bash
-cd codigo/apps/api
-npm install -D vitest @vitest/coverage-v8
-```
-Criar `src/modules/medicoes/__tests__/medicoes.service.test.ts`
-Focar em: cálculo de valor, lógica de status por perfil, validações de negócio.
+Definir Sprint 23. Opções:
+  a) Testes de integração HTTP (Fastify + Supabase de teste) — completar cobertura
+  b) Deploy ambiente staging (Railway + Vercel preview)
+  c) Feature: tela de pagamento (cálculo automático por período)
 
-## Commit
-pendente
+## Commits
+- b89dcec — test(rls): sprint 22 — testes pgTAP para isolamento cross-empresa e permissão anon
+- e432438 — test(medicoes): sprint 22 parte 2 — testes de unidade do serviço de medição (Vitest)
