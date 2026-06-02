@@ -4,50 +4,67 @@
 2026-06-02
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 22 — Testes de Integração (concluído)
+Fase 1 — Sprint 23 — Deploy Staging (Railway + Vercel)
 
 ## O que foi feito
 
-### Parte 1: RLS Tests (pgTAP) — commit b89dcec
-- Extensão pgTAP instalada no Supabase
-- `supabase/tests/rls_policies.test.sql` criado
-- 12/12 testes passando: Bug 1 (anon sem EXECUTE) + Bug 2 (cross-empresa)
+### Arquivos criados
+- `codigo/apps/api/Dockerfile` — build da API a partir do contexto raiz do monorepo; usa `tsx` como runtime para resolver imports TypeScript cross-package sem build step; `node:20-alpine`
+- `codigo/apps/api/railway.toml` — builder dockerfile, health check em `/health`, restart on failure
+- `codigo/apps/web/vercel.json` — build via `turbo build --filter=@brain-master/web`, install desde a raiz
+- `codigo/.dockerignore` — exclui `apps/mobile`, `apps/web`, `node_modules`, arquivos de teste
 
-### Parte 2: Unit Tests do serviço de medição (Vitest) — commit e432438
-- Vitest instalado em `apps/api` (v4.1.8)
-- `apps/api/vitest.config.ts` criado com aliases de path para packages/shared e validators
-- `src/modules/medicoes/__tests__/medicoes.service.test.ts` criado
-- 16/16 testes passando
+### Arquivos atualizados
+- `apps/api/.env.example` — adicionado `JWT_SECRET` (estava em uso no app.ts mas ausente no template)
+- `apps/web/.env.example` — anotação de URL staging para `NEXT_PUBLIC_API_URL`
+- `apps/api/tsconfig.json` — `exclude` agora inclui `__tests__`, `*.test.ts`, `vitest.config.ts` (resolvia erro de tsc --noEmit)
 
-**Cobertura dos testes de unidade:**
-- `registrarMedicao`: GESTOR→ativa, ENGENHEIRO→pendente_aprovacao, cálculo de valor, serviço inativo, funcionário não encontrado, obra inválida
-- `corrigirMedicao`: recalcula valor_calculado, historico condicional (só grava valor quando muda), throws 400 para medição cancelada
-- `aprovarMedicao`: aprova pendente_aprovacao→ativa, throws 400 para ativa/cancelada
-- `cancelarMedicao`: cancela ativa→cancelada, throws 400 para já cancelada
-- `rejeitarMedicao`: rejeita pendente_aprovacao→cancelada, throws 400 para outros status
-
-## Arquivos criados ou alterados
-- `supabase/tests/rls_policies.test.sql` (novo)
-- `codigo/apps/api/vitest.config.ts` (novo)
-- `codigo/apps/api/package.json` (scripts test e test:watch adicionados)
-- `codigo/apps/api/src/modules/medicoes/__tests__/medicoes.service.test.ts` (novo)
-- `sessoes/ultima-sessao.md` (este arquivo)
+### TypeScript
+- `tsc --noEmit` limpo em API e Web após ajuste do tsconfig
 
 ## Decisões tomadas
-- Chain helper com `.then`/`.catch` para tornar o mock diretamente awaitable (sem `.single()`)
-- `vi.mocked(supabase.from)` + `mockReturnValueOnce` em sequência para controlar cada from() call
-- Sem mocks de módulos externos além do `lib/supabase` — testa a lógica pura do serviço
-- path aliases no vitest.config.ts para resolver @brain-master/* sem precisar de build
+- `tsx` como runtime de produção (staging): evita build step para resolver cross-package TS imports (`@brain-master/shared` e `@brain-master/validators` têm `.ts` como main entry)
+- Build context = repo root (necessário para copiar `packages/` no Docker)
+- Dockerfile em multi-layer com manifests separados para cache eficiente
 
 ## Onde parou
-Sprint 22 completo. 28 testes no total (12 pgTAP + 16 Vitest), todos passando.
+Configuração de staging pronta. Falta o usuário executar os 2 comandos abaixo.
 
 ## Próxima ação (EXATA)
-Definir Sprint 23. Opções:
-  a) Testes de integração HTTP (Fastify + Supabase de teste) — completar cobertura
-  b) Deploy ambiente staging (Railway + Vercel preview)
-  c) Feature: tela de pagamento (cálculo automático por período)
 
-## Commits
-- b89dcec — test(rls): sprint 22 — testes pgTAP para isolamento cross-empresa e permissão anon
-- e432438 — test(medicoes): sprint 22 parte 2 — testes de unidade do serviço de medição (Vitest)
+### API → Railway
+```bash
+# 1. Instalar Railway CLI
+npm install -g @railway/cli
+
+# 2. Login
+railway login
+
+# 3. Criar projeto e vincular
+cd codigo
+railway init           # ou: railway link (se já existe o projeto)
+railway up             # faz deploy
+
+# 4. Adicionar variáveis de ambiente no dashboard Railway:
+# SUPABASE_URL, SUPABASE_SERVICE_KEY, JWT_SECRET, NODE_ENV=production
+# ALLOWED_ORIGINS=https://[seu-projeto].vercel.app
+```
+
+### Web → Vercel
+```bash
+# 1. Instalar Vercel CLI
+npm install -g vercel
+
+# 2. Deploy
+cd codigo/apps/web
+vercel
+
+# Dashboard Vercel:
+# - Root Directory: apps/web
+# - Framework: Next.js (auto-detectado)
+# Env vars: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+#           NEXT_PUBLIC_API_URL=https://[seu-servico].up.railway.app
+```
+
+## Commit
+872266c — chore(deploy): sprint 23 — configuração de staging (Railway + Vercel)
