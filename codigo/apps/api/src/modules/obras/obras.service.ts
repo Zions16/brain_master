@@ -1,6 +1,6 @@
 import { supabase } from '../../lib/supabase'
 import { CriarObraInput, EditarObraInput, MudarStatusObraInput } from '@brain-master/validators'
-import { Obra, ObraResumo } from '@brain-master/shared/tipos'
+import { Obra, ObraResumo, FuncionarioResumoObra } from '@brain-master/shared/tipos'
 
 export interface MembroObra {
   id: string
@@ -151,6 +151,79 @@ export async function removerMembro(
     .eq('usuario_id', usuarioId)
 
   if (error) throw { statusCode: 500, message: 'Erro ao remover engenheiro da obra' }
+}
+
+export async function resumoFuncionariosObra(obraId: string, empresaId: string): Promise<FuncionarioResumoObra[]> {
+  await buscarObra(obraId, empresaId)
+
+  const [medResult, pagResult] = await Promise.all([
+    supabase
+      .from('medicao')
+      .select('funcionario_id, valor_calculado, data')
+      .eq('obra_id', obraId)
+      .eq('status', 'ativa'),
+    supabase
+      .from('pagamento')
+      .select('funcionario_id, valor_total')
+      .eq('obra_id', obraId)
+      .eq('status', 'pendente'),
+  ])
+
+  type MedRow = { funcionario_id: string; valor_calculado: number; data: string }
+  type PagRow = { funcionario_id: string; valor_total: number }
+
+  const meds = (medResult.data ?? []) as MedRow[]
+  const pags = (pagResult.data ?? []) as PagRow[]
+
+  const funcIds = [...new Set([...meds.map((m) => m.funcionario_id), ...pags.map((p) => p.funcionario_id)])]
+  if (funcIds.length === 0) return []
+
+  const { data: funcionarios, error: funcError } = await supabase
+    .from('funcionario')
+    .select('id, nome, funcao, tipo_pagamento, ativo')
+    .in('id', funcIds)
+    .eq('empresa_id', empresaId)
+
+  if (funcError) throw { statusCode: 500, message: 'Erro ao buscar funcionários da obra' }
+
+  type MedAgg = { total_produzido: number; total_medicoes: number; ultima_medicao: string | null }
+  const medsByFunc = new Map<string, MedAgg>()
+  for (const m of meds) {
+    const agg = medsByFunc.get(m.funcionario_id)
+    if (agg) {
+      agg.total_produzido += Number(m.valor_calculado)
+      agg.total_medicoes++
+      if (!agg.ultima_medicao || m.data > agg.ultima_medicao) agg.ultima_medicao = m.data
+    } else {
+      medsByFunc.set(m.funcionario_id, {
+        total_produzido: Number(m.valor_calculado),
+        total_medicoes: 1,
+        ultima_medicao: m.data,
+      })
+    }
+  }
+
+  const pagsByFunc = new Map<string, number>()
+  for (const p of pags) {
+    pagsByFunc.set(p.funcionario_id, (pagsByFunc.get(p.funcionario_id) ?? 0) + Number(p.valor_total))
+  }
+
+  return ((funcionarios ?? []) as any[])
+    .map((f): FuncionarioResumoObra => {
+      const agg = medsByFunc.get(f.id) ?? { total_produzido: 0, total_medicoes: 0, ultima_medicao: null }
+      return {
+        funcionario_id: f.id,
+        nome: f.nome,
+        funcao: f.funcao ?? null,
+        tipo_pagamento: f.tipo_pagamento,
+        ativo: f.ativo,
+        total_produzido: Number(agg.total_produzido.toFixed(2)),
+        total_pendente: Number((pagsByFunc.get(f.id) ?? 0).toFixed(2)),
+        total_medicoes: agg.total_medicoes,
+        ultima_medicao: agg.ultima_medicao,
+      }
+    })
+    .sort((a, b) => b.total_produzido - a.total_produzido)
 }
 
 export async function resumoTodasObras(empresaId: string): Promise<ObraResumo[]> {

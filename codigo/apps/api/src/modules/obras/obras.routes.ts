@@ -9,6 +9,7 @@ import {
   handleEditarObra,
   handleMudarStatusObra,
   handleResumoObras,
+  handleResumoFuncionariosObra,
   handleListarMembros,
   handleAdicionarMembro,
   handleRemoverMembro,
@@ -24,6 +25,9 @@ export async function obrasRoutes(app: FastifyInstance) {
   app.get('/:id', { preHandler: [autorizar('GESTOR', 'ENGENHEIRO', 'FINANCEIRO', 'COMPRAS', 'FUNCIONARIO')], handler: handleBuscarObra })
   app.patch('/:id', { preHandler: [autorizar('GESTOR')], handler: handleEditarObra })
   app.patch('/:id/status', { preHandler: [autorizar('GESTOR')], handler: handleMudarStatusObra })
+
+  // Funcionários com resumo de produção por obra
+  app.get('/:id/funcionarios/resumo', { preHandler: [autorizar('GESTOR', 'ENGENHEIRO')], handler: handleResumoFuncionariosObra })
 
   // Membros da obra (vínculo engenheiro ↔ obra via obra_usuario)
   app.get('/:id/membros', { preHandler: [autorizar('GESTOR')], handler: handleListarMembros })

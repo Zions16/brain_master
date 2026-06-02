@@ -230,3 +230,15 @@ export interface ObraResumo extends Obra {
   total_custo_producao: number
   total_cobranca_producao: number
 }
+
+export interface FuncionarioResumoObra {
+  funcionario_id: string
+  nome: string
+  funcao: string | null
+  tipo_pagamento: TipoPagamento
+  ativo: boolean
+  total_produzido: number
+  total_pendente: number
+  total_medicoes: number
+  ultima_medicao: string | null
+}

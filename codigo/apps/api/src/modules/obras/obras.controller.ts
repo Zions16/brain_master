@@ -77,6 +77,18 @@ export async function handleResumoObras(request: FastifyRequest, reply: FastifyR
   }
 }
 
+export async function handleResumoFuncionariosObra(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+) {
+  try {
+    const resumo = await obrasService.resumoFuncionariosObra(request.params.id, request.usuario.empresa_id)
+    return reply.send({ data: resumo })
+  } catch (err: any) {
+    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  }
+}
+
 export async function handleListarMembros(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,

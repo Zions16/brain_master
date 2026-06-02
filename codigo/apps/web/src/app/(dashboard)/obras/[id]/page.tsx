@@ -2,7 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useState } from 'react'
-import { Ruler, Banknote, Wrench, ChevronRight, MapPin, User, Calendar, LayoutDashboard, HardHat, Plus, X, Trash2 } from 'lucide-react'
+import { Ruler, Banknote, Wrench, ChevronRight, MapPin, User, Calendar, LayoutDashboard, HardHat, Plus, X, Trash2, Users } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { useAuthStore } from '@/store/auth'
@@ -88,6 +88,14 @@ const SECTIONS = [
     icon: Banknote,
     color: 'bg-green-50 text-green-600',
     border: 'hover:border-green-300',
+  },
+  {
+    href: (id: string) => `/obras/${id}/funcionarios`,
+    label: 'Funcionários',
+    description: 'Produção e valor a receber por funcionário',
+    icon: Users,
+    color: 'bg-blue-50 text-blue-600',
+    border: 'hover:border-blue-300',
   },
 ]
 
