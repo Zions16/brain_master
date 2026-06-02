@@ -162,33 +162,53 @@ export async function resumoTodasObras(empresaId: string): Promise<ObraResumo[]>
 
   if (error) throw { statusCode: 500, message: 'Erro ao listar obras' }
 
-  const resultado: ObraResumo[] = []
+  const obraList = (obras as Obra[]) ?? []
+  if (obraList.length === 0) return []
 
-  for (const obra of (obras as Obra[]) ?? []) {
-    const [pagResult, medResult] = await Promise.all([
-      supabase.from('pagamento').select('valor_total, status').eq('obra_id', obra.id),
-      supabase
-        .from('medicao')
-        .select('funcionario_id, valor_calculado, valor_cobranca_calculado')
-        .eq('obra_id', obra.id)
-        .eq('status', 'ativa'),
-    ])
+  const obraIds = obraList.map((o) => o.id)
 
-    const pags = pagResult.data ?? []
-    const meds = medResult.data ?? []
+  const [pagResult, medResult] = await Promise.all([
+    supabase.from('pagamento').select('obra_id, valor_total, status').in('obra_id', obraIds),
+    supabase
+      .from('medicao')
+      .select('obra_id, funcionario_id, valor_calculado, valor_cobranca_calculado')
+      .in('obra_id', obraIds)
+      .eq('status', 'ativa'),
+  ])
 
-    const totalPago = pags
+  type PagRow = { obra_id: string; valor_total: number; status: string }
+  type MedRow = { obra_id: string; funcionario_id: string; valor_calculado: number; valor_cobranca_calculado?: number }
+
+  const pagsByObra = new Map<string, PagRow[]>()
+  for (const p of (pagResult.data ?? []) as PagRow[]) {
+    const list = pagsByObra.get(p.obra_id) ?? []
+    list.push(p)
+    pagsByObra.set(p.obra_id, list)
+  }
+
+  const medsByObra = new Map<string, MedRow[]>()
+  for (const m of (medResult.data ?? []) as MedRow[]) {
+    const list = medsByObra.get(m.obra_id) ?? []
+    list.push(m)
+    medsByObra.set(m.obra_id, list)
+  }
+
+  return obraList.map((obra) => {
+    const obraPags = pagsByObra.get(obra.id) ?? []
+    const obraMeds = medsByObra.get(obra.id) ?? []
+
+    const totalPago = obraPags
       .filter((p) => p.status === 'realizado')
       .reduce((s, p) => s + Number(p.valor_total), 0)
 
-    const totalPendente = pags
+    const totalPendente = obraPags
       .filter((p) => p.status === 'pendente')
       .reduce((s, p) => s + Number(p.valor_total), 0)
 
-    const totalCustoProducao = meds.reduce((s, m) => s + Number((m as any).valor_calculado ?? 0), 0)
-    const totalCobrancaProducao = meds.reduce((s, m) => s + Number((m as any).valor_cobranca_calculado ?? 0), 0)
+    const totalCustoProducao = obraMeds.reduce((s, m) => s + Number(m.valor_calculado ?? 0), 0)
+    const totalCobrancaProducao = obraMeds.reduce((s, m) => s + Number(m.valor_cobranca_calculado ?? 0), 0)
 
-    const funcUnicos = new Set(meds.map((m) => m.funcionario_id)).size
+    const funcUnicos = new Set(obraMeds.map((m) => m.funcionario_id)).size
 
     let progressoPct: number | null = null
     if (obra.data_inicio && obra.data_prev_fim) {
@@ -198,17 +218,15 @@ export async function resumoTodasObras(empresaId: string): Promise<ObraResumo[]>
       progressoPct = Math.min(100, Math.max(0, Math.round(((hoje - inicio) / (fim - inicio)) * 100)))
     }
 
-    resultado.push({
-      ...(obra as Obra),
+    return {
+      ...obra,
       total_pago: Number(totalPago.toFixed(2)),
       total_pendente: Number(totalPendente.toFixed(2)),
-      total_medicoes: meds.length,
+      total_medicoes: obraMeds.length,
       total_funcionarios: funcUnicos,
       progresso_pct: progressoPct,
       total_custo_producao: Number(totalCustoProducao.toFixed(2)),
       total_cobranca_producao: Number(totalCobrancaProducao.toFixed(2)),
-    })
-  }
-
-  return resultado
+    }
+  })
 }

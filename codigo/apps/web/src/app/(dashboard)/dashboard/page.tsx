@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import {
@@ -73,10 +74,24 @@ export default function DashboardGeralPage() {
     queryFn: fetchResumo,
     staleTime: 30_000,
   })
+  const [filtroStatus, setFiltroStatus] = useState<'todas' | StatusObra>('todas')
 
   if (isLoading) return <LoadingSpinner />
 
   const lista = obras ?? []
+  const listaFiltrada = filtroStatus === 'todas' ? lista : lista.filter((o) => o.status === filtroStatus)
+  const contagem = {
+    todas: lista.length,
+    ativa: lista.filter((o) => o.status === 'ativa').length,
+    pausada: lista.filter((o) => o.status === 'pausada').length,
+    encerrada: lista.filter((o) => o.status === 'encerrada').length,
+  }
+  const obrasAlerta = lista.filter((o) => {
+    const orcamentoCritico = o.valor_contrato && o.total_custo_producao / o.valor_contrato > 0.8
+    const pagamentoPendente = o.total_pendente > 0
+    return orcamentoCritico || pagamentoPendente
+  })
+
   const totalPago = lista.reduce((s, o) => s + o.total_pago, 0)
   const totalPendente = lista.reduce((s, o) => s + o.total_pendente, 0)
   const totalFuncionarios = lista.reduce((s, o) => s + o.total_funcionarios, 0)
@@ -222,18 +237,106 @@ export default function DashboardGeralPage() {
         </div>
       </div>
 
+      {/* Painel de alertas */}
+      {obrasAlerta.length > 0 && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertCircle size={16} className="text-amber-600 shrink-0" />
+            <span className="text-sm font-semibold text-amber-800">
+              {obrasAlerta.length} obra{obrasAlerta.length !== 1 ? 's' : ''} com atenção necessária
+            </span>
+          </div>
+          <div className="space-y-2">
+            {obrasAlerta.map((o) => {
+              const orcamentoPct = o.valor_contrato
+                ? Math.round((o.total_custo_producao / o.valor_contrato) * 100)
+                : null
+              return (
+                <div
+                  key={o.id}
+                  className="flex items-center justify-between gap-3 bg-white rounded-lg px-3 py-2.5 border border-amber-100"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[o.status]}`}
+                    />
+                    <span className="text-sm font-medium text-slate-800 truncate">{o.nome}</span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 text-xs">
+                    {orcamentoPct !== null && orcamentoPct > 80 && (
+                      <span className="text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded-full">
+                        Orçamento {orcamentoPct}%
+                      </span>
+                    )}
+                    {o.total_pendente > 0 && (
+                      <span className="text-amber-700 font-semibold bg-amber-100 px-2 py-0.5 rounded-full">
+                        {brl(o.total_pendente)} pendente
+                      </span>
+                    )}
+                    <Link
+                      href={`/obras/${o.id}/dashboard`}
+                      className="text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center gap-1"
+                    >
+                      Ver <ArrowRight size={11} />
+                    </Link>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Tabs de filtro */}
+      <div className="flex items-center gap-1 mb-5 bg-slate-100 p-1 rounded-xl w-fit">
+        {(
+          [
+            { key: 'todas', label: 'Todas', icon: Building2 },
+            { key: 'ativa', label: 'Ativas', icon: CheckCircle2 },
+            { key: 'pausada', label: 'Pausadas', icon: PauseCircle },
+            { key: 'encerrada', label: 'Encerradas', icon: XCircle },
+          ] as const
+        ).map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setFiltroStatus(key)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              filtroStatus === key
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Icon size={13} />
+            {label}
+            <span
+              className={`text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
+                filtroStatus === key
+                  ? 'bg-indigo-100 text-indigo-700'
+                  : 'bg-slate-200 text-slate-500'
+              }`}
+            >
+              {contagem[key === 'todas' ? 'todas' : key]}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {/* Cards por obra */}
-      {lista.length === 0 ? (
+      {listaFiltrada.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
             <AlertCircle size={24} className="text-slate-400" />
           </div>
-          <p className="text-slate-700 font-medium mb-1">Nenhuma obra encontrada</p>
-          <p className="text-slate-400 text-sm">Cadastre a primeira obra para começar.</p>
+          <p className="text-slate-700 font-medium mb-1">
+            {lista.length === 0 ? 'Nenhuma obra encontrada' : 'Nenhuma obra nesta categoria'}
+          </p>
+          <p className="text-slate-400 text-sm">
+            {lista.length === 0 ? 'Cadastre a primeira obra para começar.' : 'Selecione outra aba para ver as obras.'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 stagger-children">
-          {lista.map((obra) => {
+          {listaFiltrada.map((obra) => {
             const margem = obra.total_cobranca_producao - obra.total_custo_producao
             const margemPctObra =
               obra.total_cobranca_producao > 0

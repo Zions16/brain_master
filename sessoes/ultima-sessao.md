@@ -1,59 +1,54 @@
 # Última Sessão
 
 ## Data
-2026-06-01
+2026-06-02
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 17 — RLS Check Completo (Auditoria de Segurança)
+Fase 1 — Sprint 18 — Dashboard Multiobra (concluído)
 
 ## O que foi feito
 
-**Auditoria via Supabase MCP + SQL direto:**
-- 9 tabelas auditadas — todas com RLS ativo ✅
-- 5 problemas encontrados e corrigidos
-- 1 ação manual documentada (senha vazada)
+- **Item 1 — Refatoração `resumoTodasObras`** (`obras.service.ts`):
+  - Substituído loop N+1 (`1 + N×2` queries) por 3 queries fixas
+  - Pagamentos e medições buscados com `.in('obra_id', obraIds)` em `Promise.all`
+  - Agregação feita em memória via `Map<string, Row[]>` por `obra_id`
+  - Removido uso de `(m as any)` — tipos `PagRow` e `MedRow` explícitos
+  - TypeScript compila sem erros
 
-**Correções aplicadas (migration 20260601_sprint17_rls_security_audit.sql):**
+- **Item 2 — Tabs de filtro no dashboard geral** (`dashboard/page.tsx`):
+  - `useState<'todas' | StatusObra>` para controle do filtro (hook antes do early return)
+  - Tabs: Todas / Ativas / Pausadas / Encerradas com contador em cada tab
+  - `listaFiltrada` derivada para os cards; KPIs globais permanecem sobre `lista` completa
+  - Empty state diferenciado: "Nenhuma obra nesta categoria" vs "Cadastre a primeira obra"
 
-1. **search_path corrigido** nas 3 funções auxiliares (`get_meu_perfil`, `get_minha_empresa`, `obra_vinculada`) — adicionado `SET search_path = public` para prevenir schema injection
-
-2. **REVOKE anon** — funções SECURITY DEFINER não mais acessíveis sem autenticação via `/rest/v1/rpc/`
-
-3. **Policy duplicada removida — `empresa`** — `empresa: usuario ve a propria` (inline subquery) era redundante com `empresa: ve a propria` (usa get_minha_empresa)
-
-4. **Policy duplicada removida — `usuario`** — `usuario: atualiza proprio` era cópia exata de `usuario: atualiza proprio registro`
-
-5. **`pagamento: funcionario ve o proprio` corrigida** — antes: FUNCIONARIO via via pagamentos de TODOS os funcionários da empresa; agora: só vê os próprios, filtrado por `lower(trim(funcionario.nome)) = lower(trim(usuario.nome))`
-
-**Advisors restantes (esperados/aceitáveis):**
-- `authenticated_security_definer_function_executable` — as próprias policies RLS chamam essas funções; `authenticated` precisa ter EXECUTE para que as policies funcionem. Não pode ser revogado.
-- `auth_leaked_password_protection` — ação manual no dashboard Supabase (ver próxima ação)
+- **Item 3 — Painel de alertas consolidado** (`dashboard/page.tsx`):
+  - Aparece apenas quando há obras com alertas (render condicional)
+  - Critérios: `total_custo_producao / valor_contrato > 80%` OU `total_pendente > 0`
+  - Cada linha mostra: nome, badge de orçamento (%), badge de pendente (R$), link direto
+  - Renderizado entre os KPIs e os cards/tabs
 
 ## Arquivos alterados
-- `supabase/migrations/20260601_sprint17_rls_security_audit.sql` — criado com o SQL da migration
+- `codigo/apps/api/src/modules/obras/obras.service.ts` — refatoração `resumoTodasObras`
+- `codigo/apps/web/src/app/(dashboard)/dashboard/page.tsx` — tabs de filtro + painel de alertas
 
-## Decisões técnicas
-- FUNCIONARIO policy por nome (nome do `funcionario` = nome do `usuario` logado) — pragmático para MVP; limitação conhecida: nomes devem ser iguais (case-insensitive). Solução definitiva seria adicionar `usuario_id` na tabela `funcionario` (fase futura).
-- Não revogado EXECUTE de `authenticated` — quebaria RLS policies em cascata
+## Decisões tomadas
+- KPIs globais (topo) sempre mostram totais de TODAS as obras, independente da tab ativa — visão consolidada intacta
+- Alertas de pagamento pendente = qualquer `total_pendente > 0` (não apenas crítico por valor) — simples e útil
+- Hook `useState` declarado antes do early return `if (isLoading)` — regra de hooks respeitada
 
 ## Onde parou
-Sprint 17 concluído. Migration aplicada e verificada no banco.
+Sprint 18 concluído. Todos os 3 itens implementados. TypeScript compila limpo em API e Web.
 
 ## Próxima ação (EXATA)
-1. **Ação manual no dashboard Supabase:**
-   - Authentication → Settings → Enable "Leaked Password Protection" (HaveIBeenPwned)
-
-2. **Commit:**
+Commit e push do Sprint 18:
 ```bash
-git add supabase/migrations/20260601_sprint17_rls_security_audit.sql
-git commit -m "security(rls): fix search_path + revoke anon + remove duplicate policies + fix pagamento funcionario"
+git add codigo/apps/api/src/modules/obras/obras.service.ts
+git add codigo/apps/web/src/app/(dashboard)/dashboard/page.tsx
+git commit -m "feat(dashboard): sprint 18 — dashboard multiobra com filtros e alertas"
 git push origin main
 ```
 
-Depois: definir Sprint 18 — candidatos:
-- Dashboard multiobra (KPIs consolidados para gestores com mais de uma obra)
-- Testes de integração (fluxo completo medição → pagamento → funcionário)
-- Onboarding dos primeiros clientes piloto
+Depois: definir Sprint 19 (sugestão: módulo de aprovação de medições ou tela de funcionários por obra).
 
 ## Commit
 pendente
