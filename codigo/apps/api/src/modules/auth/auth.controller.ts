@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import '@fastify/jwt'
-import { loginSchema, tokenLoginSchema } from '@brain-master/validators'
+import { loginSchema, tokenLoginSchema, cadastroSchema } from '@brain-master/validators'
 import * as authService from './auth.service'
 
 export async function handleLogin(request: FastifyRequest, reply: FastifyReply) {
@@ -85,6 +85,29 @@ export async function handleTokenLogin(request: FastifyRequest, reply: FastifyRe
     }
   } catch (err: any) {
     return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Unauthorized', message: err.message })
+  }
+}
+
+export async function handleCadastro(request: FastifyRequest, reply: FastifyReply) {
+  const body = cadastroSchema.safeParse(request.body)
+
+  if (!body.success) {
+    return reply.status(400).send({
+      statusCode: 400,
+      error: 'Bad Request',
+      message: body.error.errors[0]?.message ?? 'Dados inválidos',
+    })
+  }
+
+  try {
+    const result = await authService.cadastrar(body.data)
+    return reply.status(201).send({ data: result })
+  } catch (err: any) {
+    return reply.status(err.statusCode ?? 500).send({
+      statusCode: err.statusCode ?? 500,
+      error: 'Bad Request',
+      message: err.message ?? 'Erro interno',
+    })
   }
 }
 

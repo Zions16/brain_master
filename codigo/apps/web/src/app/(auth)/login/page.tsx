@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Building2, HardHat, User } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/store/auth'
@@ -119,6 +120,12 @@ export default function LoginPage() {
                 </button>
               ))}
             </div>
+            <p className="text-center text-xs text-slate-500 pt-2">
+              Novo por aqui?{' '}
+              <Link href="/cadastro" className="text-indigo-600 hover:underline font-medium">
+                Criar conta grátis
+              </Link>
+            </p>
           </div>
         )}
 

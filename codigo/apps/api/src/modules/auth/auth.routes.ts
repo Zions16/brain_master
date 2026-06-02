@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify'
-import { handleLogin, handleRefresh, handleLogout, handleTokenLogin } from './auth.controller'
+import { handleLogin, handleRefresh, handleLogout, handleTokenLogin, handleCadastro } from './auth.controller'
 import { autenticar } from '../../middlewares/autenticar'
 
 export async function authRoutes(app: FastifyInstance) {
@@ -16,6 +16,21 @@ export async function authRoutes(app: FastifyInstance) {
       },
     },
     handler: handleLogin,
+  })
+
+  app.post('/cadastro', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 hour',
+        errorResponseBuilder: () => ({
+          statusCode: 429,
+          error: 'Too Many Requests',
+          message: 'Muitos cadastros. Tente novamente em 1 hora.',
+        }),
+      },
+    },
+    handler: handleCadastro,
   })
 
   app.post('/token-login', { handler: handleTokenLogin })
