@@ -1,4 +1,9 @@
 import 'dotenv/config'
+import { initSentry } from './lib/sentry'
+
+// Sentry deve ser inicializado antes de qualquer outro import
+initSentry()
+
 import { buildApp } from './app'
 
 const PORT = Number(process.env.PORT ?? 3333)

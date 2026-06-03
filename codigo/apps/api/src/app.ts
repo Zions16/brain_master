@@ -1,5 +1,6 @@
 import Fastify from 'fastify'
 import fastifyJwt from '@fastify/jwt'
+import { Sentry } from './lib/sentry'
 import { pluginCors } from './plugins/cors'
 import { pluginHelmet } from './plugins/helmet'
 import { pluginRateLimit } from './plugins/rateLimit'
@@ -45,6 +46,23 @@ export async function buildApp() {
   app.register(pagamentosRoutes, { prefix: '/api/v1/obras' })
 
   app.get('/health', async () => ({ status: 'ok' }))
+
+  app.setErrorHandler((error, _request, reply) => {
+    if (error.statusCode && error.statusCode < 500) {
+      return reply.status(error.statusCode).send({
+        statusCode: error.statusCode,
+        error: error.name,
+        message: error.message,
+      })
+    }
+    Sentry.captureException(error)
+    app.log.error(error)
+    return reply.status(500).send({
+      statusCode: 500,
+      error: 'Internal Server Error',
+      message: 'Erro interno do servidor',
+    })
+  })
 
   return app
 }

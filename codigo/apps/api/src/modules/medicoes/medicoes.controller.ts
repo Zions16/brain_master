@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { criarMedicaoSchema, corrigirMedicaoSchema, cancelarMedicaoSchema, aprovarMedicaoSchema } from '@brain-master/validators'
 import * as medicoesService from './medicoes.service'
+import { notificarMedicaoRegistrada } from '../../lib/notifications'
 
 export async function handleListarPendentesAprovacao(request: FastifyRequest, reply: FastifyReply) {
   try {
@@ -45,6 +46,15 @@ export async function handleRegistrarMedicao(request: FastifyRequest<{ Params: O
       request.usuario.id,
       request.usuario.perfil,
     )
+
+    if (medicao.status === 'pendente_aprovacao') {
+      void notificarMedicaoRegistrada({
+        medicaoId: medicao.id,
+        obraId: request.params.obraId,
+        empresaId: request.usuario.empresa_id,
+      })
+    }
+
     return reply.status(201).send({ data: medicao })
   } catch (err: any) {
     return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })

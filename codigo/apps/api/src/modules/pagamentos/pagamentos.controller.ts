@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { calculoPagamentoQuerySchema, criarPagamentoSchema, realizarPagamentoSchema, cancelarPagamentoSchema } from '@brain-master/validators'
 import * as pagamentosService from './pagamentos.service'
+import { notificarPagamentoRealizado } from '../../lib/notifications'
 
 type ObraParams = { obraId: string }
 type PagamentoParams = { obraId: string; id: string }
@@ -58,6 +59,17 @@ export async function handleRealizarPagamento(request: FastifyRequest<{ Params: 
       request.usuario.empresa_id,
       request.usuario.id,
     )
+
+    void notificarPagamentoRealizado({
+      pagamentoId: pagamento.id,
+      obraId: request.params.obraId,
+      empresaId: request.usuario.empresa_id,
+      gestorId: request.usuario.id,
+      valorTotal: (pagamento as any).valor_total ?? 0,
+      periodoInicio: (pagamento as any).periodo_inicio ?? '',
+      periodoFim: (pagamento as any).periodo_fim ?? '',
+    })
+
     return reply.send({ data: pagamento })
   } catch (err: any) {
     return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
