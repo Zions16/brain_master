@@ -33,7 +33,21 @@ export async function authRoutes(app: FastifyInstance) {
     handler: handleCadastro,
   })
 
-  app.post('/token-login', { handler: handleTokenLogin })
+  app.post('/token-login', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 hour',
+        errorResponseBuilder: () => ({
+          statusCode: 429,
+          error: 'Too Many Requests',
+          message: 'Muitas tentativas. Tente novamente em 1 hora.',
+        }),
+      },
+    },
+    handler: handleTokenLogin,
+  })
+
   app.post('/refresh', { handler: handleRefresh })
 
   app.post('/logout', {

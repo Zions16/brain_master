@@ -14,8 +14,17 @@ import { relatoriosRoutes } from './modules/relatorios/relatorios.routes'
 import { pagamentosRoutes } from './modules/pagamentos/pagamentos.routes'
 
 export async function buildApp() {
+  if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET não definido. Configure a variável de ambiente antes de iniciar em produção.')
+  }
+
   const app = Fastify({
-    logger: process.env.NODE_ENV !== 'test',
+    logger: process.env.NODE_ENV !== 'test'
+      ? {
+          redact: ['req.headers.authorization', 'body.password', 'body.token'],
+          level: 'info',
+        }
+      : false,
   })
 
   await pluginHelmet(app)
