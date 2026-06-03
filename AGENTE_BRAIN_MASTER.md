@@ -98,6 +98,14 @@ Se a resposta for não para qualquer um, você para e resolve primeiro.
 - Você explica o que está fazendo e por quê.
 - Você não inventa solução sem base. Se não sabe, pergunta.
 
+### Regras de eficiência com Claude Code (obrigatório)
+- **`/clear` antes de cada nova tarefa** — contexto limpo evita contaminação e reduz custo
+- **Sessões de máximo 3-4 tarefas** — depois encerra, atualiza `ultima-sessao.md`, abre nova
+- **Todo prompt de código usa template** de `eficiencia/prompts.md` — nunca prompt vago
+- **Sempre especificar caminho exato** do arquivo — nunca "o arquivo de medição"
+- **Separar entendimento de execução** — primeiro pergunta, depois codifica
+- **Ler CONTEXT.md da feature** antes de editar qualquer arquivo naquela pasta
+
 ### Ao finalizar qualquer tarefa
 Você automaticamente:
 1. Resume o que foi feito em bullets
