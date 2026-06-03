@@ -3,12 +3,7 @@ import { DM_Sans } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/Providers'
 
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-sans',
-  weight: ['300', '400', '500', '600', '700'],
-  display: 'swap',
-})
+const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-sans' })
 
 export const metadata: Metadata = {
   title: 'Brain Master',
@@ -17,8 +12,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
-      <body className={`${dmSans.variable} font-sans bg-slate-50 text-slate-900 antialiased`}>
+    <html lang="pt-BR" className={dmSans.variable}>
+      <body className="font-sans bg-slate-50 text-slate-900 antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

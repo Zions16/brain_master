@@ -5,6 +5,9 @@ import Link from 'next/link'
 import { Building2, HardHat, User } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/store/auth'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Spinner } from '@/components/ui/spinner'
 import type { AuthResponse } from '@brain-master/shared/tipos'
 
 type TipoPerfil = 'GESTOR' | 'ENGENHEIRO' | 'FUNCIONARIO'
@@ -138,7 +141,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Token de acesso</label>
-              <input
+              <Input
                 type="text"
                 placeholder={perfil === 'ENGENHEIRO' ? 'ENG-XXXXX' : 'FUN-XXXXX'}
                 value={token}
@@ -146,9 +149,7 @@ export default function LoginPage() {
                 maxLength={9}
                 autoFocus
                 required
-                className={`w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono tracking-widest focus:outline-none focus:ring-2 uppercase ${
-                  perfil === 'ENGENHEIRO' ? 'focus:ring-blue-500' : 'focus:ring-emerald-500'
-                }`}
+                className="font-mono tracking-widest uppercase"
               />
               <p className="text-xs text-slate-400 mt-1.5">Solicite seu token ao responsável</p>
             </div>
@@ -157,17 +158,13 @@ export default function LoginPage() {
               <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{erro}</p>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={loading || token.replace(/-/g, '').length < 8}
-              className={`w-full disabled:opacity-60 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors ${
-                perfil === 'ENGENHEIRO'
-                  ? 'bg-blue-600 hover:bg-blue-700'
-                  : 'bg-emerald-600 hover:bg-emerald-700'
-              }`}
+              className={`w-full ${perfil === 'ENGENHEIRO' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
             >
-              {loading ? 'Verificando...' : 'Entrar com token'}
-            </button>
+              {loading ? <><Spinner size="sm" className="text-white" /> Verificando...</> : 'Entrar com token'}
+            </Button>
           </form>
         )}
 
@@ -180,24 +177,22 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">E-mail</label>
-              <input
+              <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoFocus
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Senha</label>
-              <input
+              <Input
                 type="password"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 required
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -205,13 +200,13 @@ export default function LoginPage() {
               <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{erro}</p>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors"
+              className="w-full bg-blue-600 hover:bg-blue-700"
             >
-              {loading ? 'Entrando...' : 'Entrar'}
-            </button>
+              {loading ? <><Spinner size="sm" className="text-white" /> Entrando...</> : 'Entrar'}
+            </Button>
           </form>
         )}
       </div>
