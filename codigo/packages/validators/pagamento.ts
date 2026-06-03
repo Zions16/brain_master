@@ -21,5 +21,10 @@ export const realizarPagamentoSchema = z.object({
 
 export type CalculoPagamentoQuery = z.infer<typeof calculoPagamentoQuerySchema>
 
+export const cancelarPagamentoSchema = z.object({
+  motivo: z.string({ required_error: 'Motivo é obrigatório' }).min(5, 'Mínimo 5 caracteres').max(500),
+})
+
 export type CriarPagamentoInput = z.infer<typeof criarPagamentoSchema>
 export type RealizarPagamentoInput = z.infer<typeof realizarPagamentoSchema>
+export type CancelarPagamentoInput = z.infer<typeof cancelarPagamentoSchema>

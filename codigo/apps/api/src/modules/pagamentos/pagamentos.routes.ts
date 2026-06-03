@@ -6,6 +6,7 @@ import {
   handleListarPagamentos,
   handleCriarPagamento,
   handleRealizarPagamento,
+  handleCancelarPagamento,
 } from './pagamentos.controller'
 
 export async function pagamentosRoutes(app: FastifyInstance) {
@@ -27,5 +28,9 @@ export async function pagamentosRoutes(app: FastifyInstance) {
   app.patch('/:obraId/pagamentos/:id/realizar', {
     preHandler: [autorizar('GESTOR', 'FINANCEIRO')],
     handler: handleRealizarPagamento,
+  })
+  app.patch('/:obraId/pagamentos/:id/cancelar', {
+    preHandler: [autorizar('GESTOR', 'FINANCEIRO')],
+    handler: handleCancelarPagamento,
   })
 }

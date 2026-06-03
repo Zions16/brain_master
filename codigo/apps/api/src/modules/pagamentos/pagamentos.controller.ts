@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
-import { calculoPagamentoQuerySchema, criarPagamentoSchema, realizarPagamentoSchema } from '@brain-master/validators'
+import { calculoPagamentoQuerySchema, criarPagamentoSchema, realizarPagamentoSchema, cancelarPagamentoSchema } from '@brain-master/validators'
 import * as pagamentosService from './pagamentos.service'
 
 type ObraParams = { obraId: string }
@@ -57,6 +57,24 @@ export async function handleRealizarPagamento(request: FastifyRequest<{ Params: 
       request.params.obraId,
       request.usuario.empresa_id,
       request.usuario.id,
+    )
+    return reply.send({ data: pagamento })
+  } catch (err: any) {
+    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  }
+}
+
+export async function handleCancelarPagamento(request: FastifyRequest<{ Params: PagamentoParams }>, reply: FastifyReply) {
+  const body = cancelarPagamentoSchema.safeParse(request.body)
+  if (!body.success) {
+    return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: body.error.errors[0]?.message ?? 'Dados inválidos' })
+  }
+  try {
+    const pagamento = await pagamentosService.cancelarPagamento(
+      request.params.id,
+      body.data,
+      request.params.obraId,
+      request.usuario.empresa_id,
     )
     return reply.send({ data: pagamento })
   } catch (err: any) {

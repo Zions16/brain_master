@@ -16,7 +16,7 @@ export type StatusObra = 'ativa' | 'pausada' | 'encerrada'
 
 export type StatusMedicao = 'pendente' | 'ativa' | 'corrigida' | 'cancelada' | 'pendente_aprovacao'
 
-export type StatusPagamento = 'pendente' | 'realizado'
+export type StatusPagamento = 'pendente' | 'realizado' | 'cancelado'
 
 export type TipoCobranca = 'empreitada' | 'diaria'
 
@@ -138,6 +138,7 @@ export interface Pagamento {
   forma_pagamento?: string
   status: StatusPagamento
   observacao?: string
+  motivo_cancelamento?: string
   created_at: string
   funcionario?: Pick<Funcionario, 'id' | 'nome'>
 }

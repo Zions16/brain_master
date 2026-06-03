@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabase'
-import { CriarPagamentoInput, RealizarPagamentoInput } from '@brain-master/validators'
+import { CriarPagamentoInput, RealizarPagamentoInput, CancelarPagamentoInput } from '@brain-master/validators'
 import { Pagamento } from '@brain-master/shared/tipos'
 
 export interface CalculoPagamento {
@@ -215,13 +215,22 @@ export async function realizarPagamento(
 
   const { data: pagamento, error: findError } = await supabase
     .from('pagamento')
-    .select('id, status')
+    .select('id, status, funcionario_id, periodo_inicio, periodo_fim')
     .eq('id', id)
     .eq('obra_id', obraId)
     .single()
 
   if (findError || !pagamento) throw { statusCode: 404, message: 'Pagamento não encontrado' }
   if (pagamento.status === 'realizado') throw { statusCode: 400, message: 'Pagamento já foi realizado' }
+  if (pagamento.status === 'cancelado') throw { statusCode: 400, message: 'Pagamento foi cancelado e não pode ser realizado' }
+
+  // Recalcula o valor no momento da realização — garante que medições adicionadas depois do lançamento sejam incluídas
+  const calculo = await calcularValorPeriodo(
+    obraId,
+    pagamento.funcionario_id,
+    pagamento.periodo_inicio,
+    pagamento.periodo_fim,
+  )
 
   const { data, error } = await supabase
     .from('pagamento')
@@ -231,6 +240,7 @@ export async function realizarPagamento(
       data_pagamento: input.data_pagamento ?? new Date().toISOString().split('T')[0],
       forma_pagamento: input.forma_pagamento,
       observacao: input.observacao ?? null,
+      valor_total: calculo.valor_total,
     })
     .eq('id', id)
     .eq('obra_id', obraId)
@@ -238,5 +248,39 @@ export async function realizarPagamento(
     .single()
 
   if (error || !data) throw { statusCode: 500, message: 'Erro ao realizar pagamento' }
+  return data as Pagamento
+}
+
+export async function cancelarPagamento(
+  id: string,
+  input: CancelarPagamentoInput,
+  obraId: string,
+  empresaId: string,
+): Promise<Pagamento> {
+  await verificarObraEmpresa(obraId, empresaId)
+
+  const { data: pagamento, error: findError } = await supabase
+    .from('pagamento')
+    .select('id, status')
+    .eq('id', id)
+    .eq('obra_id', obraId)
+    .single()
+
+  if (findError || !pagamento) throw { statusCode: 404, message: 'Pagamento não encontrado' }
+  if (pagamento.status === 'realizado') throw { statusCode: 400, message: 'Pagamento já realizado não pode ser cancelado' }
+  if (pagamento.status === 'cancelado') throw { statusCode: 400, message: 'Pagamento já está cancelado' }
+
+  const { data, error } = await supabase
+    .from('pagamento')
+    .update({
+      status: 'cancelado',
+      motivo_cancelamento: input.motivo,
+    })
+    .eq('id', id)
+    .eq('obra_id', obraId)
+    .select()
+    .single()
+
+  if (error || !data) throw { statusCode: 500, message: 'Erro ao cancelar pagamento' }
   return data as Pagamento
 }

@@ -137,3 +137,18 @@ export default function Page({ params }: { params: { id: string } }) {
 ```
 
 **Lição:** Verificar a versão do Next.js antes de usar APIs de params. Stack usa Next.js 14.2.x.
+
+---
+
+### [2026-06-02] Supabase crash no startup — Node 20 sem WebSocket nativo
+
+**Erro:**
+```
+Error: Node.js 20 detected without native WebSocket support.
+```
+
+**Causa:** `@supabase/supabase-js` (versões recentes) inicializa `RealtimeClient` na criação do client. Node 20 não tem WebSocket nativo (adicionado no Node 22). O throw acontece em tempo de carga de módulo (`supabase.ts`), antes do Fastify subir.
+
+**Solução:** Trocar `FROM node:20-alpine` por `FROM node:22-alpine` no Dockerfile. Node 22 é o LTS atual e tem WebSocket nativo.
+
+**Alternativa descartada:** Instalar `ws` e passar via `transport` no `createClient` — mais verboso e não resolve o EOL do Node 20.

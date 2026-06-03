@@ -17,3 +17,4 @@
 | 2026-05-27 | Sprint 12 | feat: dashboard geral + lucratividade por obra + seed demo + página de serviços com preços duplos |
 | 2026-06-01 | Sprint 17 | security(rls): fix search_path + revoke anon + remove duplicate policies + fix pagamento funcionario — commit b7affc8 |
 | 2026-06-02 | Planejamento Sprint 18 | Dashboard Multiobra — 3 gaps identificados: N+1 queries, filtro de status, painel de alertas — não iniciado |
+| 2026-06-02 | Sprint 23 | Deploy Staging concluído — Web (Vercel) + API (Railway) ACTIVE. Fix: Node 20→22 para WebSocket nativo do Supabase. |
