@@ -20,7 +20,6 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="light" />
-      {/* @ts-expect-error expo-router@3.5 + @types/react@19 monorepo type mismatch */}
       <Stack screenOptions={{ headerShown: false }} />
     </>
   )
