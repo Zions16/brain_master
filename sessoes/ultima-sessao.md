@@ -1,67 +1,88 @@
 # Última Sessão
 
 ## Data
-2026-06-03
+2026-06-04
 
 ## Fase / Sprint atual
-Fase 1 — Sprint 24 — Website Institucional ✅ CONCLUÍDO
+Sprint 26 — Mobile: Scaffold + Auth
 
 ## O que foi feito
 
-### Website institucional criado do zero
-- Pasta: `~/Brain Master/website-brainmaster/`
-- Stack: Next.js 14 + TypeScript + Tailwind CSS + Framer Motion + Lucide Icons
-- Design: dark industrial com acento laranja/âmbar — identidade construção civil
-- Build: ✅ zero erros (`npm run build` limpo)
-- Dev server: ✅ rodou em http://localhost:3002
+### 1 — Scaffold completo do app mobile
 
-### Seções implementadas (10 + navbar + footer)
-1. **Navbar** — sticky, transparente → escuro no scroll, menu mobile com AnimatePresence
-2. **Hero** — headline impactante, bullets, CTAs, dashboard mockup animado, stats
-3. **Problem** — 6 cards de dores reais (planilha, WhatsApp, pagamento errado, etc.)
-4. **Solution** — 4 pilares do produto com mini-cards
-5. **Features** — 12 módulos em grid com tags coloridas por área
-6. **HowItWorks** — 4 passos com linha conectora e ícones numerados
-7. **Benefits** — 7 benefícios com métricas (−80% tempo, 0 erros, etc.)
-8. **UserProfiles** — Gestor / Engenheiro / Funcionário com mini mockups por perfil
-9. **DemoSection** — painel completo com medições, KPIs, progresso de obras, total a pagar
-10. **Pricing** — 3 planos (Starter R$79 / Pro R$99 / Enterprise)
-11. **CTA** — seção de conversão com trust signals
-12. **FAQ** — 8 perguntas em accordion animado
-13. **Footer** — logo + links + slogan "Feito para quem constrói o Brasil"
+Estrutura Expo Router v3 criada do zero:
 
-### Componentes criados
-- `DashboardMockup.tsx` — dashboard animado (float) com cards flutuantes
-- `src/lib/constants.ts` — APP_URL + variantes Framer Motion reutilizáveis
+```
+apps/mobile/
+  app/
+    _layout.tsx          ← root com redirect baseado em auth
+    (auth)/
+      _layout.tsx
+      login.tsx          ← email+senha / token (FUN-XXXXX | ENG-XXXXX)
+    (app)/
+      _layout.tsx        ← layout autenticado (Stack)
+      index.tsx          ← placeholder home (obras em Sprint 27)
+  lib/
+    api.ts               ← axios com interceptor de token + logout 401
+    supabase.ts          ← cliente Supabase com AsyncStorage
+  store/
+    auth.store.ts        ← Zustand + persist AsyncStorage
+  constants/
+    colors.ts            ← paleta dark (primary #2563EB)
+  types/
+    global.d.ts          ← patch para expo-router@3.5 + @types/react@19
+  app.json
+  tsconfig.json
+  expo-env.d.ts
+```
 
-### Arquivos de contexto
-- `contexto/contexto-produto.md`
-- `contexto/copy-base.md`
+### 2 — Tela de login
 
-## Arquivos alterados
-- `~/Brain Master/website-brainmaster/` — projeto novo completo (25 arquivos)
+- Dois modos: toggle "Email" / "Token"
+- Email: email + senha → `POST /auth/login`
+- Token: formato FUN-XXXXX ou ENG-XXXXX → `POST /auth/token-login`
+- Loading state, error via Alert, persistência automática
+
+### 3 — Infraestrutura TypeScript
+
+- `@react-native-async-storage/async-storage@1.23.1` instalado
+- `typeRoots` removido (causava conflito de instâncias)
+- `@types/react` do mobile atualizado para `^19.0.0`
+- Override `@types/react: ~18.3.12` adicionado ao root `package.json`
+- `@ts-expect-error` nos 3 layouts: bug documentado `expo-router@3.5` + monorepo
+- Type check: 0 erros
+
+## Arquivos criados/modificados
+- `codigo/apps/mobile/app/_layout.tsx` — root layout com auth guard
+- `codigo/apps/mobile/app/(auth)/_layout.tsx` — stack auth
+- `codigo/apps/mobile/app/(auth)/login.tsx` — tela de login completa
+- `codigo/apps/mobile/app/(app)/_layout.tsx` — stack autenticado
+- `codigo/apps/mobile/app/(app)/index.tsx` — home placeholder
+- `codigo/apps/mobile/lib/api.ts` — cliente axios
+- `codigo/apps/mobile/lib/supabase.ts` — cliente Supabase
+- `codigo/apps/mobile/store/auth.store.ts` — store Zustand
+- `codigo/apps/mobile/constants/colors.ts` — paleta
+- `codigo/apps/mobile/types/global.d.ts` — type patch
+- `codigo/apps/mobile/app.json` — config Expo
+- `codigo/apps/mobile/tsconfig.json` — config TypeScript
+- `codigo/apps/mobile/expo-env.d.ts` — Expo type reference
+- `codigo/package.json` — override @types/react
 
 ## Decisões tomadas
-- Projeto separado do monorepo → mais simples, sem interferir no app
-- Design dark industrial + laranja → transmite obra, tecnologia, seriedade
-- APP_URL apontando para `https://brain-master-delta.vercel.app` (configurável)
-- Framer Motion `whileInView` para scroll animations (sem useEffect manual)
-- next/font para Syne (títulos) + DM Sans (corpo) — fontes com caráter, não genéricas
+- `@ts-expect-error` nos layouts → bug `expo-router@3.5` + `@types/react@19` em monorepo; não afeta runtime (Metro/Babel)
+- Zustand + AsyncStorage para auth → padrão do projeto, persistência nativa
+- Dois modos de login na mesma tela → UX simples; evita telas separadas
+- Home como placeholder → obras e medições são Sprint 27
 
 ## Onde parou
-Website 100% funcional, buildado e verificado visualmente via Playwright.
-Não está deployado ainda — apenas local.
-
-## URLs de produção
-- **Website:** https://website-brainmaster.vercel.app ✅ LIVE
-- **App (staging):** https://brain-master-delta.vercel.app
-- **API:** https://brainmaster-production.up.railway.app
+Scaffold completo. Type check limpo. Auth funcional (depende da API estar rodando).
 
 ## Próxima ação exata
-Sprint 24 original — testes de integração no staging do app:
-1. Testar fluxo completo: login → obra → funcionário → medição → pagamento
-2. Verificar CORS entre web (Vercel) e API (Railway)
-3. Verificar RLS ativo no Supabase em produção
+Sprint 27 — Obras + Medições:
+1. `app/(app)/obras/index.tsx` — lista de obras
+2. `app/(app)/obras/[id].tsx` — detalhes da obra
+3. `app/(app)/medicoes/nova.tsx` — nova medição (3 toques)
+4. Hooks: `useObras.ts`, `useMedicoes.ts`
 
-## Commits
-- e689fe4 — feat: website institucional Brain Master — landing page completa
+## Commit
+63823b1

@@ -12,9 +12,12 @@
 | 2026-05-22 | Sprint 4 — CRUD de funcionários + produção por período; 2 bugfixes em obras e auth | Concluído |
 | 2026-05-22 | Sprint 5 — Serviços + Medições completas; bugfix session pollution + obra_vinculada ausente | Concluído |
 | 2026-05-22 | Sprint 6 — Pagamentos (4 endpoints); bugfix raiz session pollution em auth.service.ts | Concluído |
-- 2026-05-26 | Sprint 7 | feat(web): scaffold completo do dashboard (Next.js 14) — login, obras, medições, pagamentos, funcionários
+| 2026-05-26 | Sprint 7 | feat(web): scaffold completo do dashboard (Next.js 14) — login, obras, medições, pagamentos, funcionários |
 | 2026-05-27 | Sprint 11 | feat(web): home dashboard redesign + dashboard por obra com filtro de período, charts e ranking |
 | 2026-05-27 | Sprint 12 | feat: dashboard geral + lucratividade por obra + seed demo + página de serviços com preços duplos |
 | 2026-06-01 | Sprint 17 | security(rls): fix search_path + revoke anon + remove duplicate policies + fix pagamento funcionario — commit b7affc8 |
 | 2026-06-02 | Planejamento Sprint 18 | Dashboard Multiobra — 3 gaps identificados: N+1 queries, filtro de status, painel de alertas — não iniciado |
 | 2026-06-02 | Sprint 23 | Deploy Staging concluído — Web (Vercel) + API (Railway) ACTIVE. Fix: Node 20→22 para WebSocket nativo do Supabase. |
+| 2026-06-03 | Sprint 25 — Segurança e Qualidade | RLS fix obra_usuario, rate limit /token-login, redact logs, JWT guard, Sentry + Resend completos — commit c1497fa |
+| 2026-06-04 | Tooling — 10 skills instaladas/criadas + MCP Magnific pausado | ui-ux-pro-max (7), components-build, fixing-motion-performance, watermellon-ui (964 componentes) — ver ultima-sessao.md |
+| 2026-06-04 | Sprint 26 — Mobile scaffold + auth | Expo Router v3, tela login (email/token), Zustand store, axios client, 0 erros TS — commit 63823b1 |
