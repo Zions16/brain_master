@@ -20,4 +20,5 @@
 | 2026-06-02 | Sprint 23 | Deploy Staging concluído — Web (Vercel) + API (Railway) ACTIVE. Fix: Node 20→22 para WebSocket nativo do Supabase. |
 | 2026-06-03 | Sprint 25 — Segurança e Qualidade | RLS fix obra_usuario, rate limit /token-login, redact logs, JWT guard, Sentry + Resend completos — commit c1497fa |
 | 2026-06-04 | Tooling — 10 skills instaladas/criadas + MCP Magnific pausado | ui-ux-pro-max (7), components-build, fixing-motion-performance, watermellon-ui (964 componentes) — ver ultima-sessao.md |
-| 2026-06-04 | Sprint 26 — Mobile scaffold + auth | Expo Router v3, tela login (email/token), Zustand store, axios client, 0 erros TS — commit 63823b1 |
+| 2026-06-04 | Sprint 26 — Mobile scaffold + auth | Expo Router v3, tela login (email/token), Zustand store, axios client, SDK 54 — commit 63823b1 |
+| 2026-06-04 | Sprint 27 — Landing page + Web First | Diagnóstico, estratégia web first registrada, landing page completa, build fix tailwind v3 — commit 45db298 |
