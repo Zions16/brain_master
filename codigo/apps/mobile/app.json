@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Brain Master",
+    "slug": "brain-master-obras",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.brainmaster.obras"
+    },
+    "android": {
+      "package": "com.brainmaster.obras"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "color": "#2563EB"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "scheme": "brain-master"
+  }
+}
