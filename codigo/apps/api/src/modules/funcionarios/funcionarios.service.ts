@@ -78,16 +78,18 @@ export async function editarFuncionario(id: string, input: EditarFuncionarioInpu
 }
 
 export async function buscarMeuPerfil(
-  usuarioNome: string,
+  funcionarioId: string,
   empresaId: string,
 ): Promise<Funcionario | null> {
+  // Usa ID direto (JWT sub já contém funcionario.id no login por token FUN-XXXXX).
+  // Fix DT-001: busca anterior por nome permitia que dois funcionários com o mesmo
+  // nome retornassem o registro errado.
   const { data, error } = await supabase
     .from('funcionario')
     .select('*')
+    .eq('id', funcionarioId)
     .eq('empresa_id', empresaId)
-    .ilike('nome', usuarioNome.trim())
     .eq('ativo', true)
-    .limit(1)
     .maybeSingle()
 
   if (error) throw { statusCode: 500, message: 'Erro ao buscar perfil de funcionário' }
@@ -97,7 +99,13 @@ export async function buscarMeuPerfil(
 export async function listarMedicoesDoFuncionario(
   funcionarioId: string,
   empresaId: string,
+  solicitanteId?: string,
+  solicitantePerfil?: string,
 ): Promise<Medicao[]> {
+  // Fix DT-001: FUNCIONARIO só pode consultar suas próprias medições
+  if (solicitantePerfil === 'FUNCIONARIO' && solicitanteId !== funcionarioId) {
+    throw { statusCode: 403, message: 'Acesso negado' }
+  }
   await buscarFuncionario(funcionarioId, empresaId)
 
   const { data, error } = await supabase
@@ -118,7 +126,13 @@ export async function listarMedicoesDoFuncionario(
 export async function listarPagamentosDoFuncionario(
   funcionarioId: string,
   empresaId: string,
+  solicitanteId?: string,
+  solicitantePerfil?: string,
 ): Promise<Pagamento[]> {
+  // Fix DT-001: FUNCIONARIO só pode consultar seus próprios pagamentos
+  if (solicitantePerfil === 'FUNCIONARIO' && solicitanteId !== funcionarioId) {
+    throw { statusCode: 403, message: 'Acesso negado' }
+  }
   await buscarFuncionario(funcionarioId, empresaId)
 
   const { data, error } = await supabase
@@ -136,7 +150,13 @@ export async function calcularProducao(
   empresaId: string,
   inicio: string,
   fim: string,
+  solicitanteId?: string,
+  solicitantePerfil?: string,
 ): Promise<ProducaoResult> {
+  // Fix DT-001: FUNCIONARIO só pode consultar sua própria produção
+  if (solicitantePerfil === 'FUNCIONARIO' && solicitanteId !== funcionarioId) {
+    throw { statusCode: 403, message: 'Acesso negado' }
+  }
   const funcionario = await buscarFuncionario(funcionarioId, empresaId)
 
   const { data: medicoes, error } = await supabase

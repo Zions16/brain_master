@@ -54,8 +54,10 @@ export async function handleEditarFuncionario(request: FastifyRequest<{ Params: 
 
 export async function handleBuscarMeuPerfil(request: FastifyRequest, reply: FastifyReply) {
   try {
+    // Fix DT-001: usa ID do JWT (sub = funcionario.id para perfil FUNCIONARIO).
+    // Não usa nome para evitar colisão entre funcionários com mesmo nome.
     const funcionario = await funcionariosService.buscarMeuPerfil(
-      request.usuario.nome,
+      request.usuario.id,
       request.usuario.empresa_id,
     )
     return reply.send({ data: funcionario })
@@ -72,6 +74,8 @@ export async function handleListarMedicoesDoFuncionario(
     const medicoes = await funcionariosService.listarMedicoesDoFuncionario(
       request.params.id,
       request.usuario.empresa_id,
+      request.usuario.id,
+      request.usuario.perfil,
     )
     return reply.send({ data: medicoes })
   } catch (err: any) {
@@ -87,6 +91,8 @@ export async function handleListarPagamentosDoFuncionario(
     const pagamentos = await funcionariosService.listarPagamentosDoFuncionario(
       request.params.id,
       request.usuario.empresa_id,
+      request.usuario.id,
+      request.usuario.perfil,
     )
     return reply.send({ data: pagamentos })
   } catch (err: any) {
@@ -108,6 +114,8 @@ export async function handleCalcularProducao(
       request.usuario.empresa_id,
       query.data.inicio,
       query.data.fim,
+      request.usuario.id,
+      request.usuario.perfil,
     )
     return reply.send({ data: producao })
   } catch (err: any) {
