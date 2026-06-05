@@ -323,17 +323,58 @@ export default function DashboardGeralPage() {
 
       {/* Cards por obra */}
       {listaFiltrada.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-            <AlertCircle size={24} className="text-slate-400" />
+        lista.length === 0 ? (
+          /* Onboarding — plataforma sem obras */
+          <div className="max-w-lg mx-auto mt-8 mb-16">
+            <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center mb-5">
+                <Building2 size={22} className="text-indigo-600" />
+              </div>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">Bem-vindo ao Brain Master</h2>
+              <p className="text-slate-500 text-sm mb-6">Siga estes passos para começar a usar a plataforma:</p>
+
+              <ol className="space-y-3 mb-8">
+                {[
+                  { n: 1, label: 'Cadastre a primeira obra', href: '/obras/nova', done: false },
+                  { n: 2, label: 'Adicione um engenheiro/supervisor', href: '/engenheiros', done: false },
+                  { n: 3, label: 'Cadastre os funcionários da obra', href: '/funcionarios', done: false },
+                  { n: 4, label: 'Cadastre os serviços (ex: alvenaria, piso)', href: null, done: false },
+                  { n: 5, label: 'Registre a primeira medição', href: null, done: false },
+                ].map((step) => (
+                  <li key={step.n} className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                      {step.n}
+                    </span>
+                    {step.href ? (
+                      <Link href={step.href} className="text-sm text-indigo-600 hover:underline font-medium">
+                        {step.label}
+                      </Link>
+                    ) : (
+                      <span className="text-sm text-slate-600">{step.label}</span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+
+              <Link
+                href="/obras/nova"
+                className="flex items-center justify-center gap-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-3 px-4 rounded-xl transition-colors"
+              >
+                Cadastrar primeira obra
+                <ArrowRight size={15} />
+              </Link>
+            </div>
           </div>
-          <p className="text-slate-700 font-medium mb-1">
-            {lista.length === 0 ? 'Nenhuma obra encontrada' : 'Nenhuma obra nesta categoria'}
-          </p>
-          <p className="text-slate-400 text-sm">
-            {lista.length === 0 ? 'Cadastre a primeira obra para começar.' : 'Selecione outra aba para ver as obras.'}
-          </p>
-        </div>
+        ) : (
+          /* Empty state — filtro sem resultado */
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+              <AlertCircle size={24} className="text-slate-400" />
+            </div>
+            <p className="text-slate-700 font-medium mb-1">Nenhuma obra nesta categoria</p>
+            <p className="text-slate-400 text-sm">Selecione outra aba para ver as obras.</p>
+          </div>
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 stagger-children">
           {listaFiltrada.map((obra) => {
