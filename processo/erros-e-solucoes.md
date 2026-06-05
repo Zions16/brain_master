@@ -140,6 +140,27 @@ export default function Page({ params }: { params: { id: string } }) {
 
 ---
 
+### [2026-06-05] DT-001 — Isolamento de funcionário por nome causava vazamento de dados
+
+**Contexto:** Sprint 28 — Auditoria de segurança  
+**Sintoma:** Dois funcionários com mesmo nome na mesma empresa poderiam ver dados (pagamentos, medições, produção) um do outro via endpoint `/funcionarios/me` e consultas por `:id`.
+
+**Causa raiz (3 camadas):**
+1. `buscarMeuPerfil()` usava `.ilike('nome', usuarioNome)` — retornava o primeiro registro com aquele nome (não necessariamente o do usuário logado)
+2. `GET /:id/pagamentos`, `/:id/medicoes`, `/:id/producao` aceitavam qualquer UUID de funcionário da empresa — não verificavam que o solicitante FUNCIONARIO era o dono daquele ID
+3. RLS policy `pagamento: funcionario ve o proprio` também usava match por nome
+
+**Por que não detectado antes:** em produção, funcionários raramente têm nome idêntico. O bug era latente.
+
+**Solução:**
+- `buscarMeuPerfil(funcionarioId, empresaId)` — agora usa `id` do JWT (sub = funcionario.id para FUN tokens)
+- Guards `if (perfil === 'FUNCIONARIO' && solicitanteId !== funcionarioId) → 403` nas funções de consulta individual
+- Migration `20260605_dt001_fix_pagamento_rls_nome.sql` — RLS policy corrigida
+
+**Lição:** Nunca usar campos textuais (nome, email) para identificação de identidade em sistemas multiusuário. Usar sempre IDs únicos. O JWT já transportava o `funcionario.id` correto desde o início — bastava usá-lo.
+
+---
+
 ### [2026-06-02] Supabase crash no startup — Node 20 sem WebSocket nativo
 
 **Erro:**

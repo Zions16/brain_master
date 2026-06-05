@@ -4,43 +4,60 @@
 Mobile pausado. Foco total no produto web comercial.
 Ver decisão: `decisoes/estrategia-web-first.md`
 
----
-
-## Pendências bloqueantes (resolver antes de abrir cadastro público)
-
-### DT-001 — Bug de privacidade em pagamentos
-- **Severidade:** Alta
-- **Descrição:** RLS de pagamento vincula funcionário por nome, não por user_id. Funcionários com mesmo nome na mesma empresa veem pagamentos um do outro.
-- **Solução:** Adicionar `user_id` na tabela `funcionario` e atualizar policy.
-- **Status:** Documentado, não resolvido.
+**Atualizado em:** 2026-06-05
 
 ---
 
-## Sprint 27 — Website Comercial (próximo)
+## Sprint 28 — Auditoria + Correções de Segurança (em andamento)
 
 ### Objetivo
-Criar a landing page em `app/(marketing)/page.tsx` com seções:
-- Hero section com CTA
-- Problema que resolve
-- Como funciona (3 passos)
-- Principais features
-- Planos/preços (placeholder)
-- CTA final
+Resolver pendências identificadas na auditoria geral do Brain Master antes de abrir cadastro público.
 
-### Critério de conclusão
-- [ ] `/` exibe landing page (não redireciona para `/obras`)
-- [ ] Página de planos com CTAs funcionais (mesmo que placeholder)
-- [ ] Responsiva no mobile browser
-- [ ] Build sem erros
+### Tarefas
+
+#### 1. DT-001 — Bug de privacidade em pagamentos [EM EXECUÇÃO]
+- **Severidade:** Alta — bloqueia cadastro público
+- **Diagnóstico completo:**
+  - `buscarMeuPerfil()` busca funcionário por `.ilike('nome')` → primeiro encontrado com o nome → ID errado no localStorage
+  - `GET /:id/pagamentos` não valida que FUNCIONARIO está acessando seu próprio ID
+  - RLS policy também usa match por nome (defense in depth — corrigir)
+- **Solução:** Corrigir `/funcionarios/me` para usar `request.usuario.id` (JWT já tem o ID correto) + guard de autorização nos endpoints de consulta individual
+- **Branch:** `fix/auditoria-brain-master-sprint-28`
+
+#### 2. Documentação de status [✅ CONCLUÍDO]
+- `cronograma/plano-geral.md` — bloco STATUS ATUAL adicionado no topo
+- `tarefas/em-andamento.md` — este arquivo atualizado
+
+#### 3. CONTEXT.md por feature [PENDENTE]
+- Criar 5–7 arquivos curtos nas pastas principais do código
+- Reduz contexto carregado por sessão
+
+#### 4. Suite mínima Playwright [PENDENTE]
+- Login GESTOR → dashboard
+- Criar medição
+- Validar isolamento de pagamentos
+
+#### 5. Onboarding web [PENDENTE]
+- Empty state no dashboard com checklist de primeiros passos
+
+#### 6. Billing [PENDENTE — aguarda decisão de gateway]
+- Gateway: Stripe vs Asaas (EM ABERTO)
+- Página de planos já existe na landing page (placeholder)
 
 ---
 
-## Backlog web (após landing page)
+## Sprint 27 — Website Comercial [✅ CONCLUÍDO em 2026-06-04]
+- Landing page 8 seções deployada no Vercel
+- Build limpo (Tailwind v3 fix)
+- Decisão Web First registrada em `decisoes/estrategia-web-first.md`
 
-- [ ] Onboarding: estado vazio com guia de primeiro passo
-- [ ] Melhorar UX do cadastro
-- [ ] Empty states em todas as páginas
-- [ ] Responsividade da plataforma
+---
+
+## Backlog web
+
+- [ ] Responsividade completa da plataforma
 - [ ] SEO básico (meta tags, OG)
 - [ ] Página de planos com lógica de trial
-- [ ] Integração de pagamento (decisão de gateway em aberto)
+- [ ] Integração de pagamento (gateway não decidido)
+- [ ] Empty states em todas as páginas
+- [ ] Melhorar UX do cadastro

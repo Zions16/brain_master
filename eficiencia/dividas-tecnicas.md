@@ -1,47 +1,49 @@
 # Dívidas Técnicas — Brain Master
 
-## DT-001 — pagamento: FUNCIONARIO vinculado por nome (crítico)
-**Data:** 2026-06-03  
-**Severidade:** Alta  
-**Tabela:** `pagamento`
+## DT-001 — pagamento: FUNCIONARIO vinculado por nome
+**Data identificação:** 2026-06-03
+**Data resolução:** 2026-06-05
+**Severidade:** Alta → ✅ RESOLVIDO
 
-### Problema
-A policy RLS `pagamento: funcionario ve o proprio` vincula funcionário ao usuário logado via:
-```sql
-lower(TRIM(f.nome)) = lower(TRIM(u.nome))
-```
-Se dois funcionários tiverem o mesmo nome na mesma empresa, um vê o pagamento do outro.
+### Problema original
+A policy RLS e o endpoint `/funcionarios/me` vinculavam funcionário ao usuário por nome.
+Dois funcionários com mesmo nome na mesma empresa podiam cruzar dados.
 
-### Causa raiz
-A tabela `funcionario` não tem coluna `user_id` linkando a `auth.users`.
-Funcionário e usuário são entidades separadas ligadas apenas por `empresa_id + nome`.
+### Causa raiz identificada
+Três camadas de bug:
+1. `buscarMeuPerfil()` usava `.ilike('nome')` → retornava o primeiro funcionário com aquele nome
+2. `GET /:id/pagamentos` não verificava que FUNCIONARIO estava acessando seu próprio ID
+3. RLS policy usava `lower(trim(f.nome)) = lower(trim(u.nome))`
 
-### Solução correta
-1. Adicionar coluna `user_id UUID REFERENCES auth.users(id)` em `funcionario`
-2. Migrar os vínculos existentes (matching manual ou fluxo de convite)
-3. Substituir a policy por: `funcionario_id IN (SELECT id FROM funcionario WHERE user_id = auth.uid())`
+### Solução aplicada (Sprint 28 — 2026-06-05)
+1. **`funcionarios.service.ts`**: `buscarMeuPerfil(id, empresaId)` agora usa `funcionario.id` do JWT (não nome)
+2. **Guards adicionados** em `listarPagamentosDoFuncionario`, `listarMedicoesDoFuncionario`, `calcularProducao`: FUNCIONARIO só acessa seu próprio ID
+3. **Migration** `20260605_dt001_fix_pagamento_rls_nome.sql`: RLS policy corrigida (defense in depth)
+4. **CONTEXT.md** atualizado em pagamentos e funcionários com aviso do fix
 
-### Quando resolver
-Sprint 26 ou antes de abrir cadastro público. Não é bloqueante para MVP fechado.
+### Próximo passo (futuro — baixa prioridade)
+Para completar o isolamento em RLS nativo: adicionar `user_id UUID REFERENCES auth.users(id)` em `funcionario`.
+Necessário quando mobile fizer chamadas diretas ao Supabase com JWT nativo.
 
 ---
 
-## DT-002 — JWT_SECRET usado pelo @fastify/jwt mas auth é Supabase
-**Data:** 2026-06-03  
-**Severidade:** Baixa  
+## DT-002 — @fastify/jwt duplicidade
+**Data identificação:** 2026-06-03
+**Status:** ✅ FALSO POSITIVO — fechado
 
-### Problema
-`@fastify/jwt` está registrado com `JWT_SECRET` mas a autenticação real usa Supabase Auth.
-O plugin pode ser uma duplicidade sem uso real.
+### Resultado da verificação
+`@fastify/jwt` está em uso ativo:
+- `reply.jwtSign()` em `auth.controller.ts` (linhas 63 e 75) — assina JWT para FUNCIONARIO e ENGENHEIRO no token-login
+- `(request.server as any).jwt.verify()` em `autenticar.ts` — verifica JWT de FUNCIONARIO
 
-### Ação
-Verificar se `app.jwt.*` é chamado em algum lugar. Se não, remover o registro para reduzir superfície de ataque.
+O plugin é essencial. Não remover.
 
 ---
 
 ## DT-003 — /refresh sem rate limit
-**Data:** 2026-06-03  
-**Severidade:** Baixa
+**Data identificação:** 2026-06-03
+**Data resolução:** 2026-06-05
+**Severidade:** Baixa → ✅ RESOLVIDO
 
-Endpoint `/api/v1/auth/refresh` não tem rate limit.
-Baixo risco (requer token válido), mas vale adicionar na Sprint 26.
+### Solução aplicada
+Rate limit adicionado em `auth.routes.ts`: 30 requests por 15 minutos por IP.

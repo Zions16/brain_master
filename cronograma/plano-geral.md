@@ -3,6 +3,31 @@
 
 ---
 
+## STATUS ATUAL
+**Atualizado em:** 2026-06-05
+
+| Campo | Valor |
+|---|---|
+| Sprint atual | Sprint 28 — Auditoria + Correções |
+| Produto web | Em produção (Vercel + Railway) — 20+ páginas funcionando |
+| Landing page | ✅ Deployada (Sprint 27) |
+| Mobile | ⏸️ Pausado (Sprint 26 scaffoldado) — retoma após web pronto |
+| Estratégia | Web First (ver `decisoes/estrategia-web-first.md`) |
+
+### Pendências críticas (bloqueia cadastro público)
+1. **DT-001** — Bug de privacidade em pagamentos → em correção nesta sessão
+2. **Onboarding** — Usuário novo não tem guia de primeiro passo
+3. **Billing** — Sem gateway de pagamento integrado
+
+### Próxima ação
+Resolver DT-001 → Criar CONTEXT.md por feature → Suite mínima Playwright → Onboarding
+
+### Decisões em aberto
+- Gateway de pagamento: Stripe vs Asaas (não decidido)
+- Separação site + plataforma em subdomínio (não decidido)
+
+---
+
 ## LEIA ISTO PRIMEIRO
 
 Antes de qualquer ação, leia nesta ordem:
@@ -502,19 +527,25 @@ Tarefas:
 
 ## STATUS ATUAL DO PROJETO
 
+> ⚠️ O bloco abaixo é histórico (2026-04-10). O projeto está no Sprint 28 em produção.
+> Ver bloco **STATUS ATUAL** no topo deste arquivo para o estado real.
+
 ```
-Fase atual:        Fase 1 — Sprint 1
-Status:            Documentação completa. Código não iniciado.
-Próxima ação:      Inicializar Turborepo + criar projeto Supabase
-Último commit:     dcd49ab — sessao: 2026-04-09
-Branch:            main
+Fase atual (histórico):  Fase 1 — Sprint 1
+Status (histórico):      Documentação completa. Código não iniciado.
+— ESTE ESTADO NÃO É MAIS VÁLIDO — projeto está em Sprint 28, web em produção —
+Último commit:     9225cec — docs: encerramento sessao Sprint 27
+Branch:            main (trabalho em fix/auditoria-brain-master-sprint-28)
 ```
 
 ---
 
-## PRÓXIMOS PASSOS IMEDIATOS
+## PRÓXIMOS PASSOS IMEDIATOS (histórico — Sprint 1)
 
 ```bash
+# ATENÇÃO: bloco histórico — ambiente já está configurado desde Sprint 1 (2026-05-21)
+# Ver sessoes/ultima-sessao.md para o próximo passo real
+
 # 1. Entrar na pasta do projeto
 cd ~/Brain\ Master/ObrasApp/codigo
 

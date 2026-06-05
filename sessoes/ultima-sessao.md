@@ -1,83 +1,89 @@
 # Última Sessão
 
 ## Data
-2026-06-04
+2026-06-05
 
 ## Fase / Sprint atual
-Sprint 27 — Landing Page + Estratégia Web First
+Sprint 28 — Auditoria + Correções de Segurança
 
 ---
 
 ## O que foi feito
 
-### Parte 1 — Mobile Sprint 26 (início da sessão)
-- Mobile scaffoldado do zero: Expo Router v3, grupos `(auth)` e `(app)`
-- Tela de login completa: email+senha / token (FUN-XXXXX | ENG-XXXXX)
-- Zustand store com persistência AsyncStorage
-- Axios client com interceptor de token + logout 401
-- Supabase client configurado para mobile
-- Upgrade SDK 51 → 52 → 54 (para compatibilidade com Expo Go do celular)
-- Fix: `react-native-safe-area-context`, `react-native-screens`, `expo-linking` instalados
-- **Mobile pausado aqui** — decisão de focar em Web First
+### Etapa 1 — Documentação de status
+- `cronograma/plano-geral.md` — bloco STATUS ATUAL adicionado; bloco histórico "código não iniciado" marcado como obsoleto
+- `tarefas/em-andamento.md` — Sprint 27 marcado como concluído; Sprint 28 detalhado
+- `sessoes/historico.md` — sprints pulados classificados; entrada Sprint 28 adicionada
 
-### Parte 2 — Diagnóstico Web First
-Diagnóstico completo do produto:
-- **Existe:** plataforma web com 20+ páginas em produção (Vercel + Railway)
-- **Faltava:** landing page, planos, onboarding, pagamento
-- **Bug crítico:** DT-001 — funcionário pode ver pagamento de outro com mesmo nome (antes de abrir cadastro público)
-- Decisão registrada no Brain Master: `decisoes/estrategia-web-first.md`
-- `tarefas/em-andamento.md` atualizado com nova direção
+### Etapa 2 — Fix DT-001 (privacidade de pagamentos)
+- `funcionarios.service.ts`: `buscarMeuPerfil` usa `funcionario.id` do JWT (não `.ilike('nome')`)
+- Guards `perfil === 'FUNCIONARIO' && solicitanteId !== funcionarioId → 403` em listarPagamentos, listarMedicoes, calcularProducao
+- `funcionarios.controller.ts`: handlers passam `request.usuario.id` e `perfil`
+- Migration `20260605_dt001_fix_pagamento_rls_nome.sql`: RLS policy corrigida
 
-### Parte 3 — Sprint 27: Landing Page
-- `app/page.tsx` substituído — era `redirect('/obras')`, virou landing page completa
-- 8 seções: Navbar · Hero · Problema · Como funciona · Features · Perfis · Planos · CTA + Footer
-- Build corrigido (pré-existente quebrado):
-  - Removidos imports Tailwind v4 incompatíveis (`tw-animate-css`, `shadcn/tailwind.css`)
-  - `tailwind.config.ts` atualizado com color tokens (background, foreground, border)
-  - `badge.tsx` reescrito (dependência `@base-ui/react` incompatível)
-  - Instalados: `class-variance-authority`, `tailwind-merge`, `clsx`
-- Build: ✓ 15 páginas geradas
-- Deploy: pushado para main → Vercel automático
+### Etapa 3 — CONTEXT.md por feature
+- Criados: `funcionarios/CONTEXT.md`, `obras/CONTEXT.md`, `(dashboard)/CONTEXT.md`
+- Atualizados: `auth/CONTEXT.md`, `pagamentos/CONTEXT.md`, `medicoes/CONTEXT.md`
+
+### Etapa 4 — Sprints pulados
+- `sessoes/historico.md` — tabela "Sprints não implementados" adicionada
+
+### Etapa 5 — Suite mínima Playwright
+- Criados: `playwright.config.ts`, `e2e/auth.spec.ts`, `e2e/privacidade-pagamentos.spec.ts`, `e2e/README.md`
+- `tsconfig.json` — e2e excluído do type-check principal
+- **Status:** estrutura criada, requer `npm install --save-dev @playwright/test` para rodar
+
+### Etapa 6 — Onboarding mínimo
+- `dashboard/page.tsx` — empty state com checklist de 5 primeiros passos e CTA quando `obras.length === 0`
+
+### Etapa 7 — Billing
+- Não implementado — gateway não decidido (Stripe vs Asaas em aberto)
+- Ação: decidir gateway antes de implementar
+
+### Etapa 8 — MCP Google Drive
+- Status: "Needs authentication" — não está sendo usado
+- Recomendação: remover com `claude mcp remove "claude.ai Google Drive"` ou autenticar se precisar
+
+### Etapa 9 — DT-002 e DT-003
+- DT-002: `@fastify/jwt` está em uso ativo — fechado como falso positivo
+- DT-003: Rate limit adicionado em `/refresh` (30 req/15 min)
 
 ---
 
-## Arquivos criados/modificados
-- `codigo/apps/mobile/app/_layout.tsx`
-- `codigo/apps/mobile/app/(auth)/login.tsx`
-- `codigo/apps/mobile/app/(app)/index.tsx`
-- `codigo/apps/mobile/store/auth.store.ts`
-- `codigo/apps/mobile/lib/api.ts` + `lib/supabase.ts`
-- `codigo/apps/mobile/package.json` — SDK 54, todas as deps
-- `codigo/apps/web/src/app/page.tsx` — landing page completa
-- `codigo/apps/web/src/app/globals.css` — fix Tailwind v3
-- `codigo/apps/web/tailwind.config.ts` — color tokens
-- `codigo/apps/web/src/components/ui/badge.tsx` — reescrito
-- `decisoes/estrategia-web-first.md` — criado
-- `tarefas/em-andamento.md` — atualizado
+## Arquivos alterados
+- `cronograma/plano-geral.md`, `tarefas/em-andamento.md`, `sessoes/historico.md`
+- `eficiencia/dividas-tecnicas.md`, `processo/erros-e-solucoes.md`
+- `codigo/apps/api/src/modules/funcionarios/funcionarios.service.ts` — fix DT-001
+- `codigo/apps/api/src/modules/funcionarios/funcionarios.controller.ts` — fix DT-001
+- `codigo/apps/api/src/modules/auth/auth.routes.ts` — fix DT-003
+- `supabase/migrations/20260605_dt001_fix_pagamento_rls_nome.sql` — criado
+- 6 arquivos CONTEXT.md criados/atualizados
+- `codigo/apps/web/playwright.config.ts`, `tsconfig.json`, `e2e/` — estrutura E2E
+- `codigo/apps/web/src/app/(dashboard)/dashboard/page.tsx` — onboarding
 
 ---
 
 ## Decisões tomadas
-- **Web First** → mobile pausado até produto web comercialmente pronto
-- Expo SDK 54 → compatível com Expo Go atual do celular Android
-- Landing page em `app/page.tsx` direto (não em route group separado) → menos complexidade
-- `@base-ui/react` removido → dependência experimental, reescrita simples
+- DT-001 corrigido no backend (API usa service key que bypassa RLS — correção mais efetiva é no service/controller)
+- RLS corrigida também (defense in depth — só ativa com Supabase JWT nativo, futuro mobile)
+- DT-002 fechado — @fastify/jwt é essencial para tokens FUN/ENG
+- Billing aguarda decisão de gateway
 
 ---
 
 ## Onde parou
-Landing page em produção (Vercel). Build limpo. Estratégia web registrada no Brain Master.
+Sprint 28 em andamento. DT-001, DT-003 corrigidos. Todos os type-checks passando. Branch não mergeada.
 
 ## Próxima ação exata
-**Sprint 28 — Onboarding + DT-001:**
-1. Resolver DT-001 (bug privacidade pagamentos) — obrigatório antes de abrir cadastro público
-2. Empty states com guia de primeiro passo no dashboard
-3. Melhorar fluxo pós-cadastro (usuário novo cai no dashboard vazio)
+1. Mergear `fix/auditoria-brain-master-sprint-28` → `main`
+2. Instalar `@playwright/test` e adicionar `data-testid` no login para os testes rodarem
+3. Decidir gateway (Stripe vs Asaas) → implementar billing
+4. Remover ou autenticar MCP Google Drive
 
-## Commits
-- `63823b1` — feat(mobile): sprint 26 scaffold + auth
-- `d5c6346` — fix(mobile): ajv@8 + expo/tsconfig.base
-- `3cfb41c` — chore(mobile): upgrade sdk 52
-- `8bd8a16` — chore(mobile): upgrade sdk 54
-- `f6dc6fa` — fix(mobile): safe-area-context + screens
-- `45db298` — feat(web): landing page + fix build tailwind v3
+## Commit sugerido
+```bash
+git add -A
+git commit -m "fix(security): resolve DT-001 pagamento privacy + DT-003 refresh rate limit"
+git commit -m "docs: update brain master status docs + sprints history + CONTEXT.md per feature"
+git commit -m "feat(web): add onboarding empty state + e2e test structure"
+```
