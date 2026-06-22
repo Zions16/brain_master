@@ -62,7 +62,7 @@ O CI **nunca rodou de verdade** (falhava no setup por lockfile no path errado), 
 - Verificado local: lint (exceto mobile) ✅ · type-check 5/5 ✅ · build API ✅
 
 ### Dívida registrada (follow-ups)
-- [ ] 🔴 **URGENTE — segurança**: `fast-jwt <=6.2.3` (via `@fastify/jwt@8`) tem advisories de **bypass de auth JWT**. Fix = `@fastify/jwt@10` (breaking) → exige re-teste do fluxo de auth. Audit do CI está **não-bloqueante** até isso.
+- [ ] 🟠 **Segurança — requer migração Fastify 5** (investigado 2026-06-22): `fast-jwt@4.0.5` (via `@fastify/jwt@8`) tem advisories de bypass de auth JWT. **Não é patch simples:** o fix limpo é `@fastify/jwt@9/10`, que exige **Fastify 4→5** (breaking em todo o app). Série `@fastify/jwt@8` (única p/ Fastify 4) só tem 8.0.0/8.0.1, fixando `fast-jwt@^4` — sem release corrigida. Override forçando `fast-jwt@6.2.4` quebra (API incompatível com jwt@8). **Exploitabilidade real é baixa nesta config** (HS256 com `JWT_SECRET` estático, não-vazio) — vários advisories (iss/crit/RSA confusion) não se aplicam. → Planejar como **sprint própria: migração Fastify 5 + @fastify/jwt@10 + reteste de auth**. Audit do CI fica **não-bloqueante** até lá.
 - [ ] Tipar de verdade os `any` de boundary no web (hoje warnings) — gerar tipos do Supabase
 - [ ] Upgrades de deps vulneráveis (next/postcss/esbuild/expo) — deliberado, com teste
 - [ ] Re-incluir `mobile` no lint do CI quando sair da pausa
