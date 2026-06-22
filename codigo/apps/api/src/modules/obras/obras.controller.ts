@@ -1,13 +1,14 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { criarObraSchema, editarObraSchema, mudarStatusObraSchema, adicionarMembroSchema } from '@brain-master/validators'
 import * as obrasService from './obras.service'
+import { responderErro } from '../../lib/erros'
 
 export async function handleListarObras(request: FastifyRequest, reply: FastifyReply) {
   try {
     const obras = await obrasService.listarObras(request.usuario.empresa_id)
     return reply.send({ data: obras })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -15,8 +16,8 @@ export async function handleListarMinhasObras(request: FastifyRequest, reply: Fa
   try {
     const obras = await obrasService.listarMinhasObras(request.usuario.id, request.usuario.empresa_id)
     return reply.send({ data: obras })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -24,8 +25,8 @@ export async function handleBuscarObra(request: FastifyRequest<{ Params: { id: s
   try {
     const obra = await obrasService.buscarObra(request.params.id, request.usuario.empresa_id)
     return reply.send({ data: obra })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -37,8 +38,8 @@ export async function handleCriarObra(request: FastifyRequest, reply: FastifyRep
   try {
     const obra = await obrasService.criarObra(body.data, request.usuario.empresa_id)
     return reply.status(201).send({ data: obra })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -50,8 +51,8 @@ export async function handleEditarObra(request: FastifyRequest<{ Params: { id: s
   try {
     const obra = await obrasService.editarObra(request.params.id, body.data, request.usuario.empresa_id)
     return reply.send({ data: obra })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -63,8 +64,8 @@ export async function handleMudarStatusObra(request: FastifyRequest<{ Params: { 
   try {
     const obra = await obrasService.mudarStatusObra(request.params.id, body.data, request.usuario.empresa_id)
     return reply.send({ data: obra })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -72,8 +73,8 @@ export async function handleResumoObras(request: FastifyRequest, reply: FastifyR
   try {
     const resumo = await obrasService.resumoTodasObras(request.usuario.empresa_id)
     return reply.send({ data: resumo })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -84,8 +85,8 @@ export async function handleResumoFuncionariosObra(
   try {
     const resumo = await obrasService.resumoFuncionariosObra(request.params.id, request.usuario.empresa_id)
     return reply.send({ data: resumo })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -96,8 +97,8 @@ export async function handleListarMembros(
   try {
     const membros = await obrasService.listarMembros(request.params.id, request.usuario.empresa_id)
     return reply.send({ data: membros })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -112,8 +113,8 @@ export async function handleAdicionarMembro(
   try {
     await obrasService.adicionarMembro(request.params.id, body.data.usuario_id, request.usuario.empresa_id)
     return reply.status(201).send({ data: null, message: 'Engenheiro vinculado com sucesso' })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -124,7 +125,7 @@ export async function handleRemoverMembro(
   try {
     await obrasService.removerMembro(request.params.id, request.params.userId, request.usuario.empresa_id)
     return reply.status(204).send()
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }

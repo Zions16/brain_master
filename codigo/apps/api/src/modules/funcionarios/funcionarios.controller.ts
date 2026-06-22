@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { criarFuncionarioSchema, editarFuncionarioSchema, producaoQuerySchema } from '@brain-master/validators'
 import * as funcionariosService from './funcionarios.service'
+import { responderErro } from '../../lib/erros'
 
 export async function handleListarFuncionarios(
   request: FastifyRequest<{ Querystring: { obra_id?: string } }>,
@@ -12,8 +13,8 @@ export async function handleListarFuncionarios(
       request.query.obra_id,
     )
     return reply.send({ data: funcionarios })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -21,8 +22,8 @@ export async function handleBuscarFuncionario(request: FastifyRequest<{ Params: 
   try {
     const funcionario = await funcionariosService.buscarFuncionario(request.params.id, request.usuario.empresa_id)
     return reply.send({ data: funcionario })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -34,8 +35,8 @@ export async function handleCriarFuncionario(request: FastifyRequest, reply: Fas
   try {
     const funcionario = await funcionariosService.criarFuncionario(body.data, request.usuario.empresa_id)
     return reply.status(201).send({ data: funcionario })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -47,8 +48,8 @@ export async function handleEditarFuncionario(request: FastifyRequest<{ Params: 
   try {
     const funcionario = await funcionariosService.editarFuncionario(request.params.id, body.data, request.usuario.empresa_id)
     return reply.send({ data: funcionario })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -61,8 +62,8 @@ export async function handleBuscarMeuPerfil(request: FastifyRequest, reply: Fast
       request.usuario.empresa_id,
     )
     return reply.send({ data: funcionario })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -78,8 +79,8 @@ export async function handleListarMedicoesDoFuncionario(
       request.usuario.perfil,
     )
     return reply.send({ data: medicoes })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -95,8 +96,8 @@ export async function handleListarPagamentosDoFuncionario(
       request.usuario.perfil,
     )
     return reply.send({ data: pagamentos })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -118,7 +119,7 @@ export async function handleCalcularProducao(
       request.usuario.perfil,
     )
     return reply.send({ data: producao })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }

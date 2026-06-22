@@ -102,6 +102,7 @@ export default function FuncionariosPage() {
       setFormAberto(false)
       setErroForm('')
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- erro do axios/react-query (boundary externo)
     onError: (err: any) => {
       setErroForm(err?.response?.data?.message ?? 'Erro ao cadastrar funcionário.')
     },

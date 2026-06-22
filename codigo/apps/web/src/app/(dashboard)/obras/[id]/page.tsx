@@ -138,6 +138,7 @@ export default function ObraDetailPage({ params }: { params: { id: string } }) {
       setFormEquipeAberto(false)
       setErroEquipe('')
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- erro do axios/react-query (boundary externo)
     onError: (err: any) => {
       setErroEquipe(err?.response?.data?.message ?? 'Erro ao vincular engenheiro.')
     },
@@ -146,6 +147,7 @@ export default function ObraDetailPage({ params }: { params: { id: string } }) {
   const { mutate: remover } = useMutation({
     mutationFn: (usuarioId: string) => removerMembro(id, usuarioId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['obra-membros', id] }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- erro do axios/react-query (boundary externo)
     onError: (err: any) => alert(err?.response?.data?.message ?? 'Erro ao remover engenheiro.'),
   })
 

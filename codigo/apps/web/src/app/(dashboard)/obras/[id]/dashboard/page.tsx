@@ -58,11 +58,13 @@ function agruparPorMes(pags: Pagamento[]) {
   return Array.from(m.values())
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- props do tooltip do Recharts
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-lg p-3 text-sm min-w-[160px]">
       <p className="font-semibold text-slate-700 mb-2 text-xs uppercase tracking-wide">{label}</p>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- itens do payload do Recharts */}
       {payload.map((p: any) => (
         <div key={p.name} className="flex items-center justify-between gap-4">
           <span className="flex items-center gap-1.5 text-slate-500 text-xs">
@@ -85,7 +87,6 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
 
   const hoje = new Date().toISOString().split('T')[0]
   const trintaDias = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
-  const noventaDias = new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0]
 
   const [inicio, setInicio] = useState(trintaDias)
   const [fim, setFim] = useState(hoje)

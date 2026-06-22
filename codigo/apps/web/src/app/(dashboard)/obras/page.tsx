@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import {
   Building2, Users, CheckCircle2, PauseCircle,
-  XCircle, ArrowRight, TrendingUp, LayoutDashboard,
+  ArrowRight, TrendingUp, LayoutDashboard,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { LoadingSpinner } from '@/components/LoadingSpinner'

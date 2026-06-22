@@ -300,6 +300,7 @@ export default function MinhaProducaoPage() {
                 {medicoes.map((m) => (
                   <tr key={m.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 text-slate-600">{new Date(m.data).toLocaleDateString('pt-BR')}</td>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- join do Supabase tipado como array no client */}
                     <td className="px-4 py-3 text-slate-500 hidden sm:table-cell">{(m as any).obra?.nome ?? '—'}</td>
                     <td className="px-4 py-3 text-slate-800 font-medium">{m.servico?.nome ?? '—'}</td>
                     <td className="px-4 py-3 text-right text-slate-700">

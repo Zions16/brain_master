@@ -190,6 +190,7 @@ export default function MedicoesPage({ params }: { params: { id: string } }) {
         setErroForm('')
       }
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- erro do axios/react-query (boundary externo)
     onError: (err: any) => {
       setErroForm(err?.response?.data?.message ?? 'Erro ao registrar medição.')
     },

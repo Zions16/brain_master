@@ -115,6 +115,7 @@ export async function processarWebhook(payload: Buffer, signature: string) {
         trial_ends_at: subscription.trial_end
           ? new Date(subscription.trial_end * 1000).toISOString()
           : null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- current_period_end não exposto no tipo do SDK Stripe nesta versão
         current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
       }).eq('id', empresaId)
       break
@@ -122,6 +123,7 @@ export async function processarWebhook(payload: Buffer, signature: string) {
 
     case 'customer.subscription.updated':
     case 'customer.subscription.deleted': {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- objeto do evento Stripe é union amplo; acesso a campos da subscription
       const subscription = event.data.object as any
       const empresaId = subscription.metadata?.empresa_id as string | undefined
       if (!empresaId) break

@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { fechamentoPeriodo } from './relatorios.service'
+import { responderErro } from '../../lib/erros'
 
 export async function handleFechamentoPeriodo(request: FastifyRequest<{ Querystring: { inicio: string; fim: string } }>, reply: FastifyReply) {
   const { inicio, fim } = request.query
@@ -16,7 +17,7 @@ export async function handleFechamentoPeriodo(request: FastifyRequest<{ Querystr
   try {
     const relatorio = await fechamentoPeriodo(request.usuario.empresa_id, inicio, fim)
     return reply.send({ data: relatorio })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }

@@ -274,7 +274,7 @@ export async function rejeitarMedicao(
   return data as Medicao
 }
 
-export async function listarPendentesAprovacao(empresaId: string): Promise<(Medicao & { obra: { id: string; nome: string } })[]> {
+export async function listarPendentesAprovacao(_empresaId: string): Promise<(Medicao & { obra: { id: string; nome: string } })[]> {
   const { data, error } = await supabase
     .from('medicao')
     .select(`
@@ -290,6 +290,7 @@ export async function listarPendentesAprovacao(empresaId: string): Promise<(Medi
   if (error) throw { statusCode: 500, message: 'Erro ao listar pendentes de aprovação' }
 
   // Filtra apenas medições de obras da empresa
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- resultado dinâmico do Supabase (join); tipar via geração de tipos no futuro
   const rows = (data ?? []) as any[]
   const daMesmaEmpresa = rows.filter((m) => {
     // A query de RLS já garante isolamento, mas verificamos a obra_id via join

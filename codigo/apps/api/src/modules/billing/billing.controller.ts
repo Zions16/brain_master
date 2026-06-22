@@ -1,12 +1,13 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import * as billingService from './billing.service'
+import { responderErro } from '../../lib/erros'
 
 export async function handleCheckout(request: FastifyRequest, reply: FastifyReply) {
   try {
     const result = await billingService.criarCheckout(request.usuario.empresa_id, request.usuario.id)
     return reply.send(result)
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -14,8 +15,8 @@ export async function handlePortal(request: FastifyRequest, reply: FastifyReply)
   try {
     const result = await billingService.criarPortal(request.usuario.empresa_id)
     return reply.send(result)
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -23,8 +24,8 @@ export async function handleStatus(request: FastifyRequest, reply: FastifyReply)
   try {
     const result = await billingService.buscarStatus(request.usuario.empresa_id)
     return reply.send(result)
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -35,7 +36,7 @@ export async function handleWebhook(request: FastifyRequest, reply: FastifyReply
 
     const result = await billingService.processarWebhook(request.body as Buffer, signature)
     return reply.send(result)
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }

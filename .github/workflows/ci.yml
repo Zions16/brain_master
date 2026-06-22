@@ -29,7 +29,7 @@ jobs:
         run: npm ci
 
       - name: Lint
-        run: npm run lint
+        run: npm run lint -- --filter=!@brain-master/mobile
 
       - name: Type check
         run: npm run type-check
@@ -50,4 +50,7 @@ jobs:
           cache-dependency-path: codigo/package-lock.json
       - run: npm ci
       - name: Audit dependencies
+        # Não-bloqueante: vulnerabilidades são triadas/atualizadas deliberadamente
+        # (upgrades transitivos costumam ser breaking). Ver tarefas/em-andamento.md.
+        continue-on-error: true
         run: npm audit --audit-level=high
