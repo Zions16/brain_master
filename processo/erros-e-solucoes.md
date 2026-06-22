@@ -4,6 +4,24 @@ Registro cronológico de erros encontrados durante o desenvolvimento, com causa 
 
 ---
 
+## [2026-06-22] Deploy do billing derrubou a API (502)
+
+**Contexto:** Sprint 29 — merge do billing na main → deploy Railway
+**Sintoma:** API inteira em 502 após o deploy (até `/health`).
+**Causa raiz:** `lib/stripe.ts` fazia `throw` em tempo de **import** se faltasse `STRIPE_SECRET_KEY`. A env var não existia no Railway (só no `.env` local). O `billingRoutes` importa `stripe.ts` → throw no boot → app não sobe.
+**Solução (PR #2):** cliente Stripe **lazy** via Proxy — criado só no primeiro uso. Sem a chave, apenas endpoints de billing retornam 503; o resto da API sobe.
+**Lição:** integração opcional NUNCA deve lançar em tempo de import. Sempre lazy/guard. Conferir env vars no Railway ANTES de mergear código que depende delas.
+
+## [2026-06-22] Webhook do Stripe retornava 401
+
+**Contexto:** Sprint 29 — validação pós-deploy do webhook
+**Sintoma:** `POST /api/v1/billing/webhook` = 401 (Stripe chama sem token → nunca processaria).
+**Causa raiz:** `app.addHook('preHandler', autenticar)` no escopo do plugin `billingRoutes` vaza para o sub-escopo do webhook (registrado via `app.register`), mesmo registrado depois.
+**Solução (PR #3):** aplicar `autenticar` **por rota** (checkout/portal/status); webhook sem auth.
+**Lição:** em Fastify, `addHook` no escopo afeta sub-escopos. Para rota pública dentro de plugin autenticado, autenticar por rota — não via hook de escopo.
+
+---
+
 ## [2026-06-22] "Banco perdido" — na verdade pausa por inatividade (FREE)
 
 **Contexto:** Sprint 29 — tentando aplicar migration de billing
