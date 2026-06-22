@@ -12,9 +12,9 @@ export async function billingRoutes(app: FastifyInstance) {
     webhookApp.post('/webhook', handleWebhook)
   })
 
-  // Rotas autenticadas
-  app.addHook('preHandler', autenticar)
-  app.post('/checkout', { preHandler: [autorizar('GESTOR')] }, handleCheckout)
-  app.post('/portal', { preHandler: [autorizar('GESTOR')] }, handlePortal)
-  app.get('/status', { preHandler: [autorizar('GESTOR', 'FINANCEIRO')] }, handleStatus)
+  // Rotas autenticadas — autenticar por rota (NÃO via addHook no escopo, senão
+  // o hook vaza para o sub-escopo do webhook acima e o Stripe leva 401).
+  app.post('/checkout', { preHandler: [autenticar, autorizar('GESTOR')] }, handleCheckout)
+  app.post('/portal', { preHandler: [autenticar, autorizar('GESTOR')] }, handlePortal)
+  app.get('/status', { preHandler: [autenticar, autorizar('GESTOR', 'FINANCEIRO')] }, handleStatus)
 }
