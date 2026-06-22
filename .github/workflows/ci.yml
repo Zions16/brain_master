@@ -26,7 +26,9 @@ jobs:
           cache-dependency-path: codigo/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        # `npm install` (não `npm ci`): o lock pode divergir por versão de npm entre
+        # ambientes; para gate de lint/type-check isso reconcilia sem falhar.
+        run: npm install --no-audit --no-fund
 
       - name: Lint
         run: npm run lint -- --filter=!@brain-master/mobile
@@ -48,7 +50,7 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: codigo/package-lock.json
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - name: Audit dependencies
         # Não-bloqueante: vulnerabilidades são triadas/atualizadas deliberadamente
         # (upgrades transitivos costumam ser breaking). Ver tarefas/em-andamento.md.
