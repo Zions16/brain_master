@@ -42,10 +42,11 @@ Resolver pendências identificadas na auditoria geral do Brain Master antes de a
 #### 6. Billing — Stripe [EM ANDAMENTO — Sprint 29]
 - Gateway decidido: **Stripe** ✅
 - Código completo e commitado (commit `390d196`): API (lib/stripe + módulo billing), Web (páginas + Sidebar), migration `20260605_billing_stripe.sql`
-- **Bloqueios para fechar:**
-  - [ ] `STRIPE_WEBHOOK_SECRET` vazio em `apps/api/.env` — configurar webhook no Stripe Dashboard
-  - [ ] Aplicar migration `20260605_billing_stripe.sql` no Supabase (Supabase MCP estava com timeout em 2026-06-22)
+- Migration `20260605_billing_stripe.sql` **aplicada e verificada** no banco (colunas + índices presentes) ✅
+- **Único bloqueio para fechar:**
+  - [ ] `STRIPE_WEBHOOK_SECRET` vazio — configurar webhook no Stripe Dashboard (passo manual)
   - [ ] Testar fluxo com cartão `4242 4242 4242 4242`
+- Código no **PR #1** (`feat/billing-stripe`)
 
 ---
 
