@@ -4,6 +4,19 @@ Registro cronológico de erros encontrados durante o desenvolvimento, com causa 
 
 ---
 
+## [2026-06-22] "Banco perdido" — na verdade pausa por inatividade (FREE)
+
+**Contexto:** Sprint 29 — tentando aplicar migration de billing
+**Sintoma:** Supabase MCP dava timeout até num `SELECT 1`. Dashboard mostrava o projeto "App construtora" (`cojljgnuvievwsxmvdaa`) PAUSADO há +90 dias, com aviso "cannot be restored through the dashboard" e oferta de download de backup. Parecia perda do banco de produção.
+
+**Causa raiz:** Projeto no plano **FREE** pausa automaticamente após inatividade. Os dados continuam intactos — só ficam inacessíveis enquanto pausado. A mensagem de "+90 dias / não restaurável pelo dashboard" assusta, mas **abrir o dashboard reativa o projeto**.
+
+**Solução:** Acessar o dashboard da conta dona (**zps@cesar.school**, não .com) e abrir o projeto → reativa. MCP voltou a responder; migration já estava aplicada.
+
+**Prevenção:** Manter acesso frequente OU upgrade para Pro para SaaS em produção. Conferir SEMPRE qual conta/ref antes de assumir perda: ref usado pelo app fica em `apps/api/.env` → `SUPABASE_URL`.
+
+---
+
 ## [2026-05-22] Session Pollution no Supabase (Bug Crítico)
 
 **Contexto:** Sprint 6 — módulo de pagamentos  

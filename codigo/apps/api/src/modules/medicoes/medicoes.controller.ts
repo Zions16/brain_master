@@ -2,13 +2,14 @@ import { FastifyRequest, FastifyReply } from 'fastify'
 import { criarMedicaoSchema, corrigirMedicaoSchema, cancelarMedicaoSchema, aprovarMedicaoSchema } from '@brain-master/validators'
 import * as medicoesService from './medicoes.service'
 import { notificarMedicaoRegistrada } from '../../lib/notifications'
+import { responderErro } from '../../lib/erros'
 
 export async function handleListarPendentesAprovacao(request: FastifyRequest, reply: FastifyReply) {
   try {
     const pendentes = await medicoesService.listarPendentesAprovacao(request.usuario.empresa_id)
     return reply.send({ data: pendentes })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -19,8 +20,8 @@ export async function handleListarMedicoes(request: FastifyRequest<{ Params: Obr
   try {
     const medicoes = await medicoesService.listarMedicoes(request.params.obraId, request.usuario.empresa_id)
     return reply.send({ data: medicoes })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -28,8 +29,8 @@ export async function handleBuscarMedicao(request: FastifyRequest<{ Params: Medi
   try {
     const medicao = await medicoesService.buscarMedicao(request.params.id, request.params.obraId, request.usuario.empresa_id)
     return reply.send({ data: medicao })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -56,8 +57,8 @@ export async function handleRegistrarMedicao(request: FastifyRequest<{ Params: O
     }
 
     return reply.status(201).send({ data: medicao })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -75,8 +76,8 @@ export async function handleCorrigirMedicao(request: FastifyRequest<{ Params: Me
       request.usuario.id,
     )
     return reply.send({ data: medicao })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -94,8 +95,8 @@ export async function handleAprovarMedicao(request: FastifyRequest<{ Params: Med
       body.data.observacao_gestor,
     )
     return reply.send({ data: medicao })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -113,8 +114,8 @@ export async function handleCancelarMedicao(request: FastifyRequest<{ Params: Me
       request.usuario.id,
     )
     return reply.send({ data: medicao })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -132,8 +133,8 @@ export async function handleRejeitarMedicao(request: FastifyRequest<{ Params: Me
       request.usuario.id,
     )
     return reply.send({ data: medicao })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -145,7 +146,7 @@ export async function handleBuscarHistorico(request: FastifyRequest<{ Params: Me
       request.usuario.empresa_id,
     )
     return reply.send({ data: historico })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }

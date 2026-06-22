@@ -68,6 +68,7 @@ export default function ServicosPage({ params }: { params: { id: string } }) {
       setFormAberto(false)
       setErroForm('')
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- erro do axios/react-query (boundary externo)
     onError: (err: any) => {
       setErroForm(err?.response?.data?.message ?? 'Erro ao cadastrar serviço.')
     },

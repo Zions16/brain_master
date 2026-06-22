@@ -33,6 +33,7 @@ export async function autenticar(request: FastifyRequest, reply: FastifyReply) {
   if (authError || !authData.user) {
     // Fallback: tentar JWT próprio (login de funcionário por token)
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- decorator do @fastify/jwt não tipado neste escopo
       const jwt = (request.server as any).jwt
       const payload = jwt.verify(token) as { sub: string; empresa_id: string; nome: string; perfil: string }
       request.usuario = {

@@ -105,6 +105,7 @@ export async function listarMembros(obraId: string, empresaId: string): Promise<
     .eq('obra_id', obraId)
 
   if (error) throw { statusCode: 500, message: 'Erro ao listar membros da obra' }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase tipa o join como array, mas no runtime é objeto único
   return ((data ?? []).map((row: any) => row.usuario)) as MembroObra[]
 }
 
@@ -208,6 +209,7 @@ export async function resumoFuncionariosObra(obraId: string, empresaId: string):
     pagsByFunc.set(p.funcionario_id, (pagsByFunc.get(p.funcionario_id) ?? 0) + Number(p.valor_total))
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- resultado dinâmico do Supabase; o .map abaixo já garante o tipo de saída (FuncionarioResumoObra)
   return ((funcionarios ?? []) as any[])
     .map((f): FuncionarioResumoObra => {
       const agg = medsByFunc.get(f.id) ?? { total_produzido: 0, total_medicoes: 0, ultima_medicao: null }

@@ -4,7 +4,7 @@
 Mobile pausado. Foco total no produto web comercial.
 Ver decisão: `decisoes/estrategia-web-first.md`
 
-**Atualizado em:** 2026-06-05
+**Atualizado em:** 2026-06-22
 
 ---
 
@@ -15,14 +15,13 @@ Resolver pendências identificadas na auditoria geral do Brain Master antes de a
 
 ### Tarefas
 
-#### 1. DT-001 — Bug de privacidade em pagamentos [EM EXECUÇÃO]
-- **Severidade:** Alta — bloqueia cadastro público
-- **Diagnóstico completo:**
-  - `buscarMeuPerfil()` busca funcionário por `.ilike('nome')` → primeiro encontrado com o nome → ID errado no localStorage
-  - `GET /:id/pagamentos` não valida que FUNCIONARIO está acessando seu próprio ID
-  - RLS policy também usa match por nome (defense in depth — corrigir)
-- **Solução:** Corrigir `/funcionarios/me` para usar `request.usuario.id` (JWT já tem o ID correto) + guard de autorização nos endpoints de consulta individual
-- **Branch:** `fix/auditoria-brain-master-sprint-28`
+#### 1. DT-001 — Bug de privacidade em pagamentos [✅ CONCLUÍDO]
+- **Severidade:** Alta — bloqueava cadastro público
+- **Verificado em 2026-06-22 (auditoria de código):**
+  - `buscarMeuPerfil(id, empresaId)` usa `request.usuario.id` do JWT — não mais `.ilike('nome')` ✅
+  - Guard `solicitantePerfil === 'FUNCIONARIO' && solicitanteId !== funcionarioId → 403` em pagamentos/medicoes/producao ✅
+  - Documentado em `apps/api/src/modules/funcionarios/CONTEXT.md`
+- **Fix já commitado** (parte do encerramento sprint 28)
 
 #### 2. Documentação de status [✅ CONCLUÍDO]
 - `cronograma/plano-geral.md` — bloco STATUS ATUAL adicionado no topo
@@ -40,9 +39,33 @@ Resolver pendências identificadas na auditoria geral do Brain Master antes de a
 #### 5. Onboarding web [PENDENTE]
 - Empty state no dashboard com checklist de primeiros passos
 
-#### 6. Billing [PENDENTE — aguarda decisão de gateway]
-- Gateway: Stripe vs Asaas (EM ABERTO)
-- Página de planos já existe na landing page (placeholder)
+#### 6. Billing — Stripe [EM ANDAMENTO — Sprint 29]
+- Gateway decidido: **Stripe** ✅
+- Código completo e commitado (commit `390d196`): API (lib/stripe + módulo billing), Web (páginas + Sidebar), migration `20260605_billing_stripe.sql`
+- Migration `20260605_billing_stripe.sql` **aplicada e verificada** no banco (colunas + índices presentes) ✅
+- **Único bloqueio para fechar:**
+  - [ ] `STRIPE_WEBHOOK_SECRET` vazio — configurar webhook no Stripe Dashboard (passo manual)
+  - [ ] Testar fluxo com cartão `4242 4242 4242 4242`
+- Código no **PR #1** (`feat/billing-stripe`)
+
+---
+
+## Sprint 28.1 — Saneamento de CI (2026-06-22)
+
+O CI **nunca rodou de verdade** (falhava no setup por lockfile no path errado), mascarando dívida do repo. Corrigido:
+
+### Feito ✅
+- `ci.yml`: roda em `codigo/` (working-directory + `cache-dependency-path`); lint exclui `mobile` (pausado)
+- `tsconfig.json` em `packages/shared` e `packages/validators` (type-check antes pegava o monorepo inteiro)
+- **API lint-clean**: 48 `catch (err: any)` → helper tipado `lib/erros.ts` (`responderErro`); 8 `as any` tipados ou com `eslint-disable` justificado (boundaries de Supabase/Stripe/Fastify); código morto removido
+- **Política de lint por camada** (`.eslintrc.js`): `no-explicit-any` = **erro no backend**, **warning no web** (UI tem `any` de boundary de libs; dívida visível, paga gradual)
+- Verificado local: lint (exceto mobile) ✅ · type-check 5/5 ✅ · build API ✅
+
+### Dívida registrada (follow-ups)
+- [ ] 🔴 **URGENTE — segurança**: `fast-jwt <=6.2.3` (via `@fastify/jwt@8`) tem advisories de **bypass de auth JWT**. Fix = `@fastify/jwt@10` (breaking) → exige re-teste do fluxo de auth. Audit do CI está **não-bloqueante** até isso.
+- [ ] Tipar de verdade os `any` de boundary no web (hoje warnings) — gerar tipos do Supabase
+- [ ] Upgrades de deps vulneráveis (next/postcss/esbuild/expo) — deliberado, com teste
+- [ ] Re-incluir `mobile` no lint do CI quando sair da pausa
 
 ---
 

@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify'
 import '@fastify/jwt'
 import { loginSchema, tokenLoginSchema, cadastroSchema } from '@brain-master/validators'
 import * as authService from './auth.service'
+import { responderErro } from '../../lib/erros'
 
 export async function handleLogin(request: FastifyRequest, reply: FastifyReply) {
   const body = loginSchema.safeParse(request.body)
@@ -17,12 +18,8 @@ export async function handleLogin(request: FastifyRequest, reply: FastifyReply) 
   try {
     const result = await authService.login(body.data)
     return reply.status(200).send({ data: result })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({
-      statusCode: err.statusCode ?? 500,
-      error: 'Unauthorized',
-      message: err.message ?? 'Erro interno',
-    })
+  } catch (err) {
+    return responderErro(reply, err, 'Unauthorized')
   }
 }
 
@@ -40,12 +37,8 @@ export async function handleRefresh(request: FastifyRequest, reply: FastifyReply
   try {
     const result = await authService.refresh(refresh_token)
     return reply.status(200).send({ data: result })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({
-      statusCode: err.statusCode ?? 500,
-      error: 'Unauthorized',
-      message: err.message ?? 'Erro interno',
-    })
+  } catch (err) {
+    return responderErro(reply, err, 'Unauthorized')
   }
 }
 
@@ -83,8 +76,8 @@ export async function handleTokenLogin(request: FastifyRequest, reply: FastifyRe
         },
       })
     }
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Unauthorized', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err, 'Unauthorized')
   }
 }
 
@@ -102,12 +95,8 @@ export async function handleCadastro(request: FastifyRequest, reply: FastifyRepl
   try {
     const result = await authService.cadastrar(body.data)
     return reply.status(201).send({ data: result })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({
-      statusCode: err.statusCode ?? 500,
-      error: 'Bad Request',
-      message: err.message ?? 'Erro interno',
-    })
+  } catch (err) {
+    return responderErro(reply, err, 'Bad Request')
   }
 }
 

@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
 import * as svc from './engenheiros.service'
+import { responderErro } from '../../lib/erros'
 
 const criarSchema = z.object({
   nome: z.string({ required_error: 'Nome é obrigatório' }).min(2).max(100),
@@ -24,12 +25,8 @@ export async function handleCriarEngenheiro(request: FastifyRequest, reply: Fast
   try {
     const data = await svc.criarEngenheiro(body.data.nome, request.usuario.empresa_id)
     return reply.status(201).send({ data })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({
-      statusCode: err.statusCode ?? 500,
-      error: 'Error',
-      message: err.message ?? 'Erro interno',
-    })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -39,11 +36,7 @@ export async function handleRegenerarToken(request: FastifyRequest, reply: Fasti
   try {
     const data = await svc.regenerarToken(id, request.usuario.empresa_id)
     return reply.status(200).send({ data })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({
-      statusCode: err.statusCode ?? 500,
-      error: 'Error',
-      message: err.message ?? 'Erro interno',
-    })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }

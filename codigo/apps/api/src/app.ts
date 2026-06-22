@@ -13,6 +13,7 @@ import { medicoesRoutes } from './modules/medicoes/medicoes.routes'
 import { medicoesGlobalRoutes } from './modules/medicoes/medicoes.global.routes'
 import { relatoriosRoutes } from './modules/relatorios/relatorios.routes'
 import { pagamentosRoutes } from './modules/pagamentos/pagamentos.routes'
+import { billingRoutes } from './modules/billing/billing.routes'
 
 export async function buildApp() {
   if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
@@ -44,6 +45,7 @@ export async function buildApp() {
   app.register(medicoesGlobalRoutes, { prefix: '/api/v1/medicoes' })
   app.register(relatoriosRoutes, { prefix: '/api/v1/relatorios' })
   app.register(pagamentosRoutes, { prefix: '/api/v1/obras' })
+  app.register(billingRoutes, { prefix: '/api/v1/billing' })
 
   app.get('/health', async () => ({ status: 'ok' }))
 

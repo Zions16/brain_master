@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify'
 import { calculoPagamentoQuerySchema, criarPagamentoSchema, realizarPagamentoSchema, cancelarPagamentoSchema } from '@brain-master/validators'
 import * as pagamentosService from './pagamentos.service'
 import { notificarPagamentoRealizado } from '../../lib/notifications'
+import { responderErro } from '../../lib/erros'
 
 type ObraParams = { obraId: string }
 type PagamentoParams = { obraId: string; id: string }
@@ -19,8 +20,8 @@ export async function handleCalcularPagamento(request: FastifyRequest<{ Params: 
       query.data.fim,
     )
     return reply.send({ data: calculos })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -28,8 +29,8 @@ export async function handleListarPagamentos(request: FastifyRequest<{ Params: O
   try {
     const pagamentos = await pagamentosService.listarPagamentos(request.params.obraId, request.usuario.empresa_id)
     return reply.send({ data: pagamentos })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -41,8 +42,8 @@ export async function handleCriarPagamento(request: FastifyRequest<{ Params: Obr
   try {
     const pagamento = await pagamentosService.criarPagamento(body.data, request.params.obraId, request.usuario.empresa_id)
     return reply.status(201).send({ data: pagamento })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -60,19 +61,24 @@ export async function handleRealizarPagamento(request: FastifyRequest<{ Params: 
       request.usuario.id,
     )
 
+    const pagamentoExt = pagamento as typeof pagamento & {
+      valor_total?: number
+      periodo_inicio?: string
+      periodo_fim?: string
+    }
     void notificarPagamentoRealizado({
       pagamentoId: pagamento.id,
       obraId: request.params.obraId,
       empresaId: request.usuario.empresa_id,
       gestorId: request.usuario.id,
-      valorTotal: (pagamento as any).valor_total ?? 0,
-      periodoInicio: (pagamento as any).periodo_inicio ?? '',
-      periodoFim: (pagamento as any).periodo_fim ?? '',
+      valorTotal: pagamentoExt.valor_total ?? 0,
+      periodoInicio: pagamentoExt.periodo_inicio ?? '',
+      periodoFim: pagamentoExt.periodo_fim ?? '',
     })
 
     return reply.send({ data: pagamento })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
 
@@ -89,7 +95,7 @@ export async function handleCancelarPagamento(request: FastifyRequest<{ Params: 
       request.usuario.empresa_id,
     )
     return reply.send({ data: pagamento })
-  } catch (err: any) {
-    return reply.status(err.statusCode ?? 500).send({ statusCode: err.statusCode ?? 500, error: 'Error', message: err.message })
+  } catch (err) {
+    return responderErro(reply, err)
   }
 }
