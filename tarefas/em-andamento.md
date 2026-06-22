@@ -4,7 +4,7 @@
 Mobile pausado. Foco total no produto web comercial.
 Ver decisão: `decisoes/estrategia-web-first.md`
 
-**Atualizado em:** 2026-06-05
+**Atualizado em:** 2026-06-22
 
 ---
 
@@ -15,14 +15,13 @@ Resolver pendências identificadas na auditoria geral do Brain Master antes de a
 
 ### Tarefas
 
-#### 1. DT-001 — Bug de privacidade em pagamentos [EM EXECUÇÃO]
-- **Severidade:** Alta — bloqueia cadastro público
-- **Diagnóstico completo:**
-  - `buscarMeuPerfil()` busca funcionário por `.ilike('nome')` → primeiro encontrado com o nome → ID errado no localStorage
-  - `GET /:id/pagamentos` não valida que FUNCIONARIO está acessando seu próprio ID
-  - RLS policy também usa match por nome (defense in depth — corrigir)
-- **Solução:** Corrigir `/funcionarios/me` para usar `request.usuario.id` (JWT já tem o ID correto) + guard de autorização nos endpoints de consulta individual
-- **Branch:** `fix/auditoria-brain-master-sprint-28`
+#### 1. DT-001 — Bug de privacidade em pagamentos [✅ CONCLUÍDO]
+- **Severidade:** Alta — bloqueava cadastro público
+- **Verificado em 2026-06-22 (auditoria de código):**
+  - `buscarMeuPerfil(id, empresaId)` usa `request.usuario.id` do JWT — não mais `.ilike('nome')` ✅
+  - Guard `solicitantePerfil === 'FUNCIONARIO' && solicitanteId !== funcionarioId → 403` em pagamentos/medicoes/producao ✅
+  - Documentado em `apps/api/src/modules/funcionarios/CONTEXT.md`
+- **Fix já commitado** (parte do encerramento sprint 28)
 
 #### 2. Documentação de status [✅ CONCLUÍDO]
 - `cronograma/plano-geral.md` — bloco STATUS ATUAL adicionado no topo
@@ -40,9 +39,13 @@ Resolver pendências identificadas na auditoria geral do Brain Master antes de a
 #### 5. Onboarding web [PENDENTE]
 - Empty state no dashboard com checklist de primeiros passos
 
-#### 6. Billing [PENDENTE — aguarda decisão de gateway]
-- Gateway: Stripe vs Asaas (EM ABERTO)
-- Página de planos já existe na landing page (placeholder)
+#### 6. Billing — Stripe [EM ANDAMENTO — Sprint 29]
+- Gateway decidido: **Stripe** ✅
+- Código completo e commitado (commit `390d196`): API (lib/stripe + módulo billing), Web (páginas + Sidebar), migration `20260605_billing_stripe.sql`
+- **Bloqueios para fechar:**
+  - [ ] `STRIPE_WEBHOOK_SECRET` vazio em `apps/api/.env` — configurar webhook no Stripe Dashboard
+  - [ ] Aplicar migration `20260605_billing_stripe.sql` no Supabase (Supabase MCP estava com timeout em 2026-06-22)
+  - [ ] Testar fluxo com cartão `4242 4242 4242 4242`
 
 ---
 
